@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, Building2, Check, ChevronDown, Menu, ShieldCheck, Wrench, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import logoAsset from "@/assets/WhatsApp_Image_2026-09-16_at_12.51.45_PM.jpeg.asset.json";
+import logoAsset from "@/assets/silverfox-logo.jpg.asset.json";
 import kitchenAsset from "@/assets/aaron-huber-G7sE2S4Lab4-unsplash.jpg.asset.json";
 import livingAsset from "@/assets/spacejoy-IH7wPsjwomc-unsplash.jpg.asset.json";
 import viewAsset from "@/assets/infinite-views-79NjpXDOJU8-unsplash.jpg.asset.json";
@@ -42,7 +42,7 @@ function Index() {
       <nav className="sticky top-0 z-50 border-b border-border/70 bg-background/90 backdrop-blur-xl" aria-label="Main navigation">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
           <a href="#top" aria-label="Silverfox Property Management home" className="shrink-0">
-            <img src={logoAsset.url} alt="Silverfox Property Management" className="h-12 w-auto" />
+            <img src={logoAsset.url} alt="Silverfox Property Management" className="h-11 w-auto sm:h-12" />
           </a>
           <div className="hidden items-center gap-8 text-sm font-medium md:flex">
             <a href="#properties" className="transition-colors hover:text-accent">Properties</a>
@@ -185,7 +185,7 @@ function Index() {
 
       <footer className="border-t border-border bg-background py-12">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-10 px-5 sm:flex-row sm:items-end lg:px-8">
-          <div><img src={logoAsset.url} alt="Silverfox Property Management" className="h-14 w-auto" /><p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">Professional property care for owners and residents.</p></div>
+          <div><img src={logoAsset.url} alt="Silverfox Property Management" className="h-12 w-auto" /><p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">Professional property care for owners and residents.</p></div>
           <div className="text-sm text-muted-foreground sm:text-right"><p>© 2026 Silverfox Property Management</p><p className="mt-2">All rights reserved.</p></div>
         </div>
       </footer>
