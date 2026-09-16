@@ -151,16 +151,30 @@
     font-family: var(--font-sans);
     letter-spacing: 0;
     text-rendering: optimizeLegibility;
-    transition: background-color 200ms ease, color 200ms ease;
+    transition:
+      background-color 200ms ease,
+      color 200ms ease;
   }
 
-  html { color-scheme: light; scroll-behavior: smooth; }
+  html {
+    color-scheme: light;
+    scroll-behavior: smooth;
+  }
 
-  html.dark { color-scheme: dark; }
+  html.dark {
+    color-scheme: dark;
+  }
 
-  ::selection { background: color-mix(in oklab, var(--accent) 25%, transparent); }
+  ::selection {
+    background: color-mix(in oklab, var(--accent) 25%, transparent);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
