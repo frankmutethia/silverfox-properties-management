@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, Building2, Check, ChevronDown, Menu, ShieldCheck, Wrench, X } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, Building2, Check, ChevronDown, Menu, Moon, ShieldCheck, Sun, Wrench, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import logoAsset from "@/assets/silverfox-logo.jpg.asset.json";
 import kitchenAsset from "@/assets/aaron-huber-G7sE2S4Lab4-unsplash.jpg.asset.json";
@@ -32,10 +32,36 @@ const properties = [
 
 function Index() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
   const [location, setLocation] = useState("All locations");
   const [type, setType] = useState("All property types");
 
   const browse = () => document.querySelector("#properties")?.scrollIntoView({ behavior: "smooth" });
+
+  useEffect(() => {
+    setDarkMode(document.documentElement.classList.contains("dark"));
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = !darkMode;
+    setDarkMode(nextTheme);
+    document.documentElement.classList.toggle("dark", nextTheme);
+    window.localStorage.setItem("silverfox-theme", nextTheme ? "dark" : "light");
+  };
+
+  const themeToggle = (className?: string) => (
+    <Button
+      variant="ghost"
+      size="icon"
+      className={className}
+      onClick={toggleTheme}
+      aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+      aria-pressed={darkMode}
+      title={darkMode ? "Light mode" : "Dark mode"}
+    >
+      {darkMode ? <Sun /> : <Moon />}
+    </Button>
+  );
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -51,12 +77,16 @@ function Index() {
             <a href="#contact" className="transition-colors hover:text-accent">Contact</a>
           </div>
           <div className="hidden items-center gap-3 md:flex">
+            {themeToggle()}
             <Button variant="ghost" asChild><a href="#residents">Resident support</a></Button>
             <Button variant="brand" asChild><a href="#owners">Owner enquiry</a></Button>
           </div>
-          <Button variant="ghost" size="icon" className="md:hidden" aria-label={menuOpen ? "Close menu" : "Open menu"} onClick={() => setMenuOpen(!menuOpen)}>
-            {menuOpen ? <X /> : <Menu />}
-          </Button>
+          <div className="flex items-center gap-1 md:hidden">
+            {themeToggle()}
+            <Button variant="ghost" size="icon" aria-label={menuOpen ? "Close menu" : "Open menu"} onClick={() => setMenuOpen(!menuOpen)}>
+              {menuOpen ? <X /> : <Menu />}
+            </Button>
+          </div>
         </div>
         {menuOpen && (
           <div className="border-t border-border bg-background px-5 py-5 md:hidden">
@@ -149,14 +179,14 @@ function Index() {
         </div>
       </section>
 
-      <section className="bg-primary text-primary-foreground">
+      <section className="bg-brand-surface text-brand-surface-foreground">
         <div className="grid lg:grid-cols-2">
           <img src={livingAsset.url} alt="Warm modern living room with plants" loading="lazy" className="h-full min-h-[460px] w-full object-cover" />
           <div id="owners" className="flex items-center px-6 py-20 sm:px-12 lg:px-20">
             <div className="max-w-xl">
               <p className="mb-5 text-xs font-bold uppercase tracking-[0.18em] text-accent">For property owners</p>
               <h2 className="font-serif text-4xl leading-tight sm:text-5xl">Confidence in every detail.</h2>
-              <p className="mt-6 leading-7 text-primary-foreground/70">Your property deserves attentive management and clear communication. We provide a dependable point of contact for the work that protects your investment.</p>
+              <p className="mt-6 leading-7 text-brand-surface-foreground/70">Your property deserves attentive management and clear communication. We provide a dependable point of contact for the work that protects your investment.</p>
               <ul className="mt-8 grid gap-4 text-sm sm:grid-cols-2">
                 {["Property oversight", "Maintenance coordination", "Resident communication", "Clear reporting"].map((item) => <li key={item} className="flex items-center gap-3"><Check className="size-4 text-accent" />{item}</li>)}
               </ul>
