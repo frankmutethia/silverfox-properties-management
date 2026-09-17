@@ -41,7 +41,11 @@ export default function SiteHeader() {
           className="hidden items-center gap-6 text-sm font-medium lg:flex"
         >
           {sections.map(([label, id]) => (
-            <a key={id} href={`/#${id}`} className="transition-colors hover:text-accent">
+            <a
+              key={id}
+              href={`/#${id}`}
+              className="inline-flex min-h-10 items-center transition-colors hover:text-accent"
+            >
               {label}
             </a>
           ))}
@@ -86,7 +90,7 @@ export default function SiteHeader() {
               key={id}
               href={`/#${id}`}
               onClick={() => setMenuOpen(false)}
-              className="py-3 text-sm font-medium"
+              className="flex min-h-11 items-center text-sm font-medium"
             >
               {label}
             </a>

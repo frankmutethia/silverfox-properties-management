@@ -38,14 +38,14 @@ export default function Home() {
           <img
             src={kitchen}
             alt="Bright contemporary kitchen with island"
-            className="h-[47vh] min-h-96 w-full object-cover sm:rounded-md lg:h-[62vh]"
+            className="h-[42vh] min-h-80 w-full object-cover sm:min-h-96 sm:rounded-md lg:h-[62vh]"
           />
         </div>
       </header>
 
       <PropertyListings />
 
-      <section id="management" className="bg-card py-20 lg:py-28">
+      <section id="management" className="bg-card py-16 lg:py-28">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <div className="grid gap-10 border-b border-border pb-14 lg:grid-cols-[1fr_.75fr] lg:items-end">
             <div>
@@ -141,7 +141,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="residents" className="py-20 lg:py-28">
+      <section id="residents" className="py-16 lg:py-28">
         <div className="mx-auto grid max-w-7xl gap-12 px-5 lg:grid-cols-12 lg:items-center lg:px-8">
           <div className="lg:col-span-5">
             <p className="mb-5 text-xs font-bold uppercase tracking-[0.18em] text-accent">
@@ -165,19 +165,19 @@ export default function Home() {
               src={view}
               alt="Light-filled living room with city view"
               loading="lazy"
-              className="aspect-[4/5] w-full rounded-sm object-cover"
+              className="aspect-[4/3] w-full rounded-sm object-cover sm:aspect-[4/5]"
             />
             <img
               src={kitchen}
               alt="Carefully maintained contemporary kitchen"
               loading="lazy"
-              className="aspect-[4/5] w-full rounded-sm object-cover sm:mt-12"
+              className="aspect-[4/3] w-full rounded-sm object-cover sm:mt-12 sm:aspect-[4/5]"
             />
           </div>
         </div>
       </section>
 
-      <section id="contact" className="bg-secondary py-20 lg:py-28">
+      <section id="contact" className="bg-secondary py-16 lg:py-28">
         <div className="mx-auto max-w-7xl px-5 text-center lg:px-8">
           <p className="mb-5 text-xs font-bold uppercase tracking-[0.18em] text-accent">
             Start a conversation
@@ -206,11 +206,14 @@ export default function Home() {
           <div className="mt-6 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground sm:flex-row sm:gap-6">
             <a
               href="mailto:Info@silverfoxpropertymanagement.co.ke"
-              className="max-w-full break-words transition-colors hover:text-foreground"
+              className="inline-flex min-h-10 max-w-full items-center break-words transition-colors hover:text-foreground"
             >
               Info@silverfoxpropertymanagement.co.ke
             </a>
-            <a href="tel:+254701507570" className="transition-colors hover:text-foreground">
+            <a
+              href="tel:+254701507570"
+              className="inline-flex min-h-10 items-center transition-colors hover:text-foreground"
+            >
               0701 507570
             </a>
           </div>

@@ -28,7 +28,7 @@ export default function PropertyGallery({ property }: { property: Property }) {
               <img
                 src={photo.src}
                 alt={photo.alt}
-                className="h-[440px] w-full object-contain sm:h-[560px]"
+                className="h-[360px] w-full object-contain sm:h-[500px] lg:h-[560px]"
                 fetchPriority="high"
               />
               <span className="absolute bottom-4 right-4 flex items-center gap-2 rounded-md bg-background px-3 py-2 text-xs shadow-sm">

@@ -16,11 +16,14 @@ export default function SiteFooter() {
           <address className="mb-4 flex flex-col gap-3 not-italic">
             <a
               href="mailto:Info@silverfoxpropertymanagement.co.ke"
-              className="break-words hover:text-foreground"
+              className="inline-flex min-h-10 items-center break-words hover:text-foreground md:justify-end"
             >
               Info@silverfoxpropertymanagement.co.ke
             </a>
-            <a href="tel:+254701507570" className="hover:text-foreground">
+            <a
+              href="tel:+254701507570"
+              className="inline-flex min-h-10 items-center hover:text-foreground md:justify-end"
+            >
               0701 507570
             </a>
           </address>

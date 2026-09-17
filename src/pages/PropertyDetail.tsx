@@ -18,7 +18,7 @@ export default function PropertyDetail({ property }: { property: Property }) {
     <main id="main-content" className="mx-auto max-w-7xl px-5 pb-20 pt-8 lg:px-8">
       <a
         href="/#properties"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
+        className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-primary"
       >
         <ArrowLeft className="size-4" />
         All properties
@@ -43,16 +43,19 @@ export default function PropertyDetail({ property }: { property: Property }) {
             aria-label="Property sections"
             className="my-8 flex flex-wrap gap-x-6 gap-y-3 border-y border-border py-4 text-sm font-medium"
           >
-            <a href="#overview" className="hover:text-accent">
+            <a href="#overview" className="inline-flex min-h-10 items-center hover:text-accent">
               Overview
             </a>
-            <a href="#specifications" className="hover:text-accent">
+            <a
+              href="#specifications"
+              className="inline-flex min-h-10 items-center hover:text-accent"
+            >
               Specifications
             </a>
-            <a href="#amenities" className="hover:text-accent">
+            <a href="#amenities" className="inline-flex min-h-10 items-center hover:text-accent">
               Amenities
             </a>
-            <a href="#location" className="hover:text-accent">
+            <a href="#location" className="inline-flex min-h-10 items-center hover:text-accent">
               Location
             </a>
           </nav>
@@ -128,7 +131,7 @@ export default function PropertyDetail({ property }: { property: Property }) {
           </Button>
           <a
             href={enquiry}
-            className="mt-5 block break-words text-sm text-muted-foreground hover:text-primary"
+            className="mt-3 flex min-h-10 items-center break-words text-sm text-muted-foreground hover:text-primary"
           >
             Info@silverfoxpropertymanagement.co.ke
           </a>
