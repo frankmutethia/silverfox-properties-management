@@ -22,9 +22,10 @@ npm run build
 
 ## Deployment
 
-Deploy the generated `dist` directory to a static web host. Configure an
-`index.html` fallback for `/properties/*` and unknown URLs so property pages
-also work when opened directly or refreshed.
+Deploy the generated `dist` directory to a static web host. The root `vercel.json`
+configures Vercel's `index.html` fallback for property pages and unknown URLs.
+This lets React handle routing when a property is clicked, opened directly or
+refreshed. Other static hosts need the same SPA fallback configured separately.
 `npm run preview` serves the production build locally.
 
 The browser entry is `src/main.tsx`, the application shell is `src/App.tsx`,
