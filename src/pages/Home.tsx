@@ -1,129 +1,13 @@
-import {
-  ArrowRight,
-  Building2,
-  Check,
-  ChevronDown,
-  Menu,
-  Moon,
-  ShieldCheck,
-  Sun,
-  Wrench,
-  X,
-} from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowRight, Building2, Check, Mail, Phone, ShieldCheck, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/silverfox-logo.jpg";
 import kitchen from "@/assets/aaron-huber-G7sE2S4Lab4-unsplash.jpg";
 import living from "@/assets/spacejoy-IH7wPsjwomc-unsplash.jpg";
 import view from "@/assets/infinite-views-79NjpXDOJU8-unsplash.jpg";
-import houseOne from "@/assets/ronnie-george-z11gbBo13ro-unsplash.jpg";
-import houseTwo from "@/assets/ian-macdonald-W8z6aiwfi1E-unsplash.jpg";
-import houseThree from "@/assets/todd-kent-178j8tJrNlc-unsplash.jpg";
-
-const properties = [
-  { image: houseOne, title: "Garden Residence", label: "Single-family home" },
-  { image: houseTwo, title: "Classic Gabled Home", label: "Residential property" },
-  { image: houseThree, title: "Veranda House", label: "Managed residence" },
-];
+import PropertyListings from "@/components/PropertyListings";
 
 export default function Home() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [location, setLocation] = useState("All locations");
-  const [type, setType] = useState("All property types");
-
-  const browse = () =>
-    document.querySelector("#properties")?.scrollIntoView({ behavior: "smooth" });
-
-  useEffect(() => {
-    setDarkMode(document.documentElement.classList.contains("dark"));
-  }, []);
-
-  const toggleTheme = () => {
-    const nextTheme = !darkMode;
-    setDarkMode(nextTheme);
-    document.documentElement.classList.toggle("dark", nextTheme);
-    window.localStorage.setItem("silverfox-theme", nextTheme ? "dark" : "light");
-  };
-
-  const themeToggle = (className?: string) => (
-    <Button
-      variant="ghost"
-      size="icon"
-      className={className}
-      onClick={toggleTheme}
-      aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-      aria-pressed={darkMode}
-      title={darkMode ? "Light mode" : "Dark mode"}
-    >
-      {darkMode ? <Sun /> : <Moon />}
-    </Button>
-  );
-
   return (
-    <main className="min-h-screen overflow-x-hidden bg-background text-foreground">
-      <nav
-        className="sticky top-0 z-50 border-b border-border/70 bg-background/90 backdrop-blur-xl"
-        aria-label="Main navigation"
-      >
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <a href="#top" aria-label="Silverfox Property Management home" className="shrink-0">
-            <img src={logo} alt="Silverfox Property Management" className="h-11 w-auto sm:h-12" />
-          </a>
-          <div className="hidden items-center gap-8 text-sm font-medium md:flex">
-            <a href="#properties" className="transition-colors hover:text-accent">
-              Properties
-            </a>
-            <a href="#management" className="transition-colors hover:text-accent">
-              Management
-            </a>
-            <a href="#owners" className="transition-colors hover:text-accent">
-              For owners
-            </a>
-            <a href="#contact" className="transition-colors hover:text-accent">
-              Contact
-            </a>
-          </div>
-          <div className="hidden items-center gap-3 md:flex">
-            {themeToggle()}
-            <Button variant="ghost" asChild>
-              <a href="#residents">Resident support</a>
-            </Button>
-            <Button variant="brand" asChild>
-              <a href="#owners">Owner enquiry</a>
-            </Button>
-          </div>
-          <div className="flex items-center gap-1 md:hidden">
-            {themeToggle()}
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={menuOpen ? "Close menu" : "Open menu"}
-              onClick={() => setMenuOpen(!menuOpen)}
-            >
-              {menuOpen ? <X /> : <Menu />}
-            </Button>
-          </div>
-        </div>
-        {menuOpen && (
-          <div className="border-t border-border bg-background px-5 py-5 md:hidden">
-            <div className="flex flex-col gap-4 text-sm font-medium">
-              {[
-                ["Properties", "#properties"],
-                ["Management", "#management"],
-                ["For owners", "#owners"],
-                ["Resident support", "#residents"],
-                ["Contact", "#contact"],
-              ].map(([label, href]) => (
-                <a key={href} href={href} onClick={() => setMenuOpen(false)}>
-                  {label}
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-      </nav>
-
+    <main id="main-content" className="min-h-screen bg-background text-foreground">
       <header id="top" className="pb-16 pt-14 lg:pb-24 lg:pt-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <p className="mb-6 text-xs font-bold uppercase tracking-[0.18em] text-accent">
@@ -139,43 +23,14 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="relative z-10 mx-auto mt-12 grid max-w-4xl gap-1 rounded-md bg-card p-2 shadow-2xl ring-1 ring-border sm:grid-cols-[1fr_1fr_auto]">
-            <label className="flex flex-col gap-1 border-b border-border px-4 py-2 sm:border-b-0 sm:border-r">
-              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                Location
-              </span>
-              <span className="flex items-center justify-between gap-2">
-                <select
-                  value={location}
-                  onChange={(event) => setLocation(event.target.value)}
-                  className="w-full appearance-none bg-transparent text-sm font-medium outline-none"
-                >
-                  <option>All locations</option>
-                  <option>Urban homes</option>
-                  <option>Suburban homes</option>
-                </select>
-                <ChevronDown className="size-4 text-muted-foreground" />
-              </span>
-            </label>
-            <label className="flex flex-col gap-1 px-4 py-2">
-              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                Property type
-              </span>
-              <span className="flex items-center justify-between gap-2">
-                <select
-                  value={type}
-                  onChange={(event) => setType(event.target.value)}
-                  className="w-full appearance-none bg-transparent text-sm font-medium outline-none"
-                >
-                  <option>All property types</option>
-                  <option>Single-family home</option>
-                  <option>Apartment</option>
-                </select>
-                <ChevronDown className="size-4 text-muted-foreground" />
-              </span>
-            </label>
-            <Button variant="cyan" size="lg" onClick={browse} className="h-full min-h-12">
-              Browse homes <ArrowRight />
+          <div className="mt-10 flex flex-wrap gap-3">
+            <Button variant="brand" size="lg" asChild>
+              <a href="#properties">
+                Explore properties <ArrowRight />
+              </a>
+            </Button>
+            <Button variant="outline" size="lg" asChild>
+              <a href="#contact">Talk to our team</a>
             </Button>
           </div>
         </div>
@@ -187,6 +42,8 @@ export default function Home() {
           />
         </div>
       </header>
+
+      <PropertyListings />
 
       <section id="management" className="bg-card py-20 lg:py-28">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
@@ -241,66 +98,27 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="properties" className="py-20 lg:py-28">
-        <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <div className="mb-12 flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
-            <div>
-              <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-accent">
-                Selected homes
-              </p>
-              <h2 className="font-serif text-4xl text-primary sm:text-5xl">
-                Spaces under our care
-              </h2>
-            </div>
-            <p className="max-w-sm text-sm leading-6 text-muted-foreground">
-              A glimpse of the residential spaces that inspire our standard of service.
-            </p>
+      <section id="owners" className="bg-brand-surface text-brand-surface-foreground">
+        <div className="mx-auto grid max-w-7xl md:grid-cols-[2fr_3fr]">
+          <div className="relative order-2 h-52 overflow-hidden sm:h-64 md:order-1 md:h-auto">
+            <img
+              src={living}
+              alt="Warm modern living room with plants"
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover object-[50%_65%]"
+            />
           </div>
-          <div className="grid gap-8 md:grid-cols-3">
-            {properties.map((property, index) => (
-              <article key={property.title} className={index === 1 ? "md:mt-12" : ""}>
-                <div className="overflow-hidden rounded-sm">
-                  <img
-                    src={property.image}
-                    alt={property.title}
-                    loading="lazy"
-                    className="aspect-[4/3] w-full object-cover transition-transform duration-500 hover:scale-[1.03]"
-                  />
-                </div>
-                <div className="flex items-start justify-between border-b border-border py-5">
-                  <div>
-                    <h3 className="font-serif text-2xl text-primary">{property.title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{property.label}</p>
-                  </div>
-                  <span className="text-xs font-semibold text-accent">0{index + 1}</span>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-brand-surface text-brand-surface-foreground">
-        <div className="grid lg:grid-cols-2">
-          <img
-            src={living}
-            alt="Warm modern living room with plants"
-            loading="lazy"
-            className="h-full min-h-[460px] w-full object-cover"
-          />
-          <div id="owners" className="flex items-center px-6 py-20 sm:px-12 lg:px-20">
+          <div className="order-1 flex items-center px-5 py-9 sm:px-8 md:order-2 md:px-10 lg:px-12 lg:py-12">
             <div className="max-w-xl">
-              <p className="mb-5 text-xs font-bold uppercase tracking-[0.18em] text-accent">
-                For property owners
-              </p>
-              <h2 className="font-serif text-4xl leading-tight sm:text-5xl">
+              <p className="mb-3 text-xs font-bold uppercase text-accent">For property owners</p>
+              <h2 className="font-serif text-3xl leading-tight sm:text-4xl">
                 Confidence in every detail.
               </h2>
-              <p className="mt-6 leading-7 text-brand-surface-foreground/70">
+              <p className="mt-4 text-sm leading-6 text-brand-surface-foreground/80">
                 Your property deserves attentive management and clear communication. We provide a
                 dependable point of contact for the work that protects your investment.
               </p>
-              <ul className="mt-8 grid gap-4 text-sm sm:grid-cols-2">
+              <ul className="mt-5 grid gap-x-5 gap-y-3 text-sm sm:grid-cols-2">
                 {[
                   "Property oversight",
                   "Maintenance coordination",
@@ -308,12 +126,12 @@ export default function Home() {
                   "Clear reporting",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-3">
-                    <Check className="size-4 text-accent" />
+                    <Check className="size-4 shrink-0 text-accent" />
                     {item}
                   </li>
                 ))}
               </ul>
-              <Button variant="cyan" size="lg" asChild className="mt-10">
+              <Button variant="cyan" size="lg" asChild className="mt-6">
                 <a href="#contact">
                   Discuss your property <ArrowRight />
                 </a>
@@ -373,32 +191,31 @@ export default function Home() {
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <Button variant="brand" size="lg" asChild>
-              <a href="mailto:info@silverfoxproperties.com">Owner enquiry</a>
+              <a href="mailto:Info@silverfoxpropertymanagement.co.ke">
+                <Mail />
+                Email us
+              </a>
             </Button>
             <Button variant="outline" size="lg" asChild>
-              <a href="mailto:info@silverfoxproperties.com">Resident enquiry</a>
+              <a href="tel:+254701507570">
+                <Phone />
+                Call us
+              </a>
             </Button>
           </div>
-          <p className="mt-4 text-xs text-muted-foreground">
-            Email address shown as a temporary contact until your official details are supplied.
-          </p>
+          <div className="mt-6 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground sm:flex-row sm:gap-6">
+            <a
+              href="mailto:Info@silverfoxpropertymanagement.co.ke"
+              className="max-w-full break-words transition-colors hover:text-foreground"
+            >
+              Info@silverfoxpropertymanagement.co.ke
+            </a>
+            <a href="tel:+254701507570" className="transition-colors hover:text-foreground">
+              0701 507570
+            </a>
+          </div>
         </div>
       </section>
-
-      <footer className="border-t border-border bg-background py-12">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-10 px-5 sm:flex-row sm:items-end lg:px-8">
-          <div>
-            <img src={logo} alt="Silverfox Property Management" className="h-12 w-auto" />
-            <p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">
-              Professional property care for owners and residents.
-            </p>
-          </div>
-          <div className="text-sm text-muted-foreground sm:text-right">
-            <p>© 2026 Silverfox Property Management</p>
-            <p className="mt-2">All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </main>
   );
 }

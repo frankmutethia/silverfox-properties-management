@@ -1,5 +1,9 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, useEffect, type ErrorInfo, type ReactNode } from "react";
 import Home from "./pages/Home";
+import PropertyDetail from "./pages/PropertyDetail";
+import SiteHeader from "./components/SiteHeader";
+import SiteFooter from "./components/SiteFooter";
+import { properties } from "./data/properties";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   override state = { hasError: false };
@@ -58,16 +62,30 @@ function StatusPage({
 }
 
 export default function App() {
+  useEffect(() => {
+    // Cross-page hash targets do not exist until React mounts the destination page.
+    const frame = requestAnimationFrame(() => {
+      const id = window.location.hash.slice(1);
+      if (id) document.getElementById(id)?.scrollIntoView({ behavior: "instant" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+  const property = properties.find((item) => pathname === `/properties/${item.slug}`);
   return (
     <ErrorBoundary>
-      {window.location.pathname === "/" ? (
+      <SiteHeader />
+      {pathname === "/" ? (
         <Home />
+      ) : property ? (
+        <PropertyDetail property={property} />
       ) : (
         <StatusPage
           title="404 - Page not found"
           message="The page you're looking for doesn't exist or has been moved."
         />
       )}
+      <SiteFooter />
     </ErrorBoundary>
   );
 }

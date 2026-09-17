@@ -159,6 +159,17 @@
   html {
     color-scheme: light;
     scroll-behavior: smooth;
+    scroll-padding-top: 6.5rem;
+  }
+
+  [id] {
+    scroll-margin-top: 1rem;
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 4px;
   }
 
   html.dark {
