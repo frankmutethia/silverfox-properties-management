@@ -44,3 +44,25 @@ gallery; additional photos automatically enable thumbnail and next/previous cont
 Property pages use `/properties/<slug>` URLs. Navigation uses native links,
 including home-section anchors, so refresh, browser history and opening a new tab
 work without an additional routing dependency.
+
+## Staff workspace preview
+
+The public header links to `/staff/login`. The split-screen sign-in form accepts
+any valid email and non-empty sample password and opens `/admin`. Credentials are
+not verified, transmitted or stored. `/staff/forgot-password` provides an account
+support link, not a reset-email service. These routes are an interface preview,
+not an authentication or authorization boundary; admin URLs are publicly accessible.
+
+The admin workspace has Dashboard, Properties and Blogs routes, a collapsible
+desktop sidebar, a mobile navigation drawer, shared light/dark theme controls,
+help, sidebar logout links and a profile menu. Logout returns to sign-in; there
+is no server session to revoke yet. Properties reads the existing website collection
+and browser-local records. Create property opens a modal for name, reference,
+type, location, description, price/currency/period, room counts, area, amenities
+and up to five local photos (JPG/PNG/WebP, up to 600 KB each). New records are
+stored under `silverfox-local-properties`, included in dashboard totals and can
+be viewed from the admin table. They are not published to the public website.
+Blogs saves editable drafts under `silverfox-blog-drafts` in localStorage on the
+current browser; drafts are not published or synchronized. The profile uses a
+local illustrated placeholder avatar. Connect server-backed authentication and
+authorization before adding privileged operations or private data.

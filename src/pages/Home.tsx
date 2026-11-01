@@ -7,47 +7,97 @@ import PropertyListings from "@/components/PropertyListings";
 
 export default function Home() {
   return (
-    <main id="main-content" className="min-h-screen bg-background text-foreground">
-      <header id="top" className="pb-16 pt-14 lg:pb-24 lg:pt-20">
-        <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <p className="mb-6 text-xs font-bold uppercase tracking-[0.18em] text-accent">
-            Property care, thoughtfully delivered
+    <main id="main-content" className="min-h-screen bg-background font-sans text-foreground">
+      <header
+        id="top"
+        className="relative overflow-hidden bg-brand-surface text-brand-surface-foreground"
+      >
+        <img
+          src={kitchen}
+          alt="Bright contemporary kitchen with a large island and elegant pendant lighting"
+          fetchPriority="high"
+          className="absolute inset-0 h-full w-full object-cover object-[58%_50%] lg:left-[35%] lg:w-[65%] lg:object-[50%_52%]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-surface via-brand-surface/80 to-brand-surface/20 lg:from-35% lg:via-brand-surface/40 lg:via-60% lg:to-transparent" />
+        <div className="relative mx-auto max-w-7xl px-5 py-16 sm:py-20 lg:px-8 lg:py-24">
+          <p className="mb-7 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[.2em] text-white/85 sm:text-xs">
+            <span className="h-px w-10 bg-accent" />
+            Inspired spaces. Personal service.
           </p>
-          <div className="grid items-end gap-10 lg:grid-cols-[1.45fr_.75fr]">
-            <h1 className="max-w-4xl font-serif text-5xl leading-[1.02] text-primary sm:text-6xl lg:text-8xl">
-              A better standard of <span className="italic text-accent">property care.</span>
-            </h1>
-            <p className="max-w-lg text-base leading-7 text-muted-foreground lg:pb-2 lg:text-lg">
-              Silverfox brings owners and residents together through responsive management,
-              considered maintenance, and a genuine respect for every home.
-            </p>
-          </div>
-
-          <div className="mt-10 flex flex-wrap gap-3">
-            <Button variant="brand" size="lg" asChild>
+          <h1 className="max-w-xl text-5xl font-semibold leading-[1.08] tracking-[-.045em] text-white sm:text-6xl lg:text-7xl">
+            Great places.
+            <br />
+            <span className="font-serif font-normal italic tracking-normal text-accent">
+              Better living.
+            </span>
+          </h1>
+          <p className="mt-7 max-w-md text-base leading-7 text-white/80">
+            Discover a place to call home, and a property partner who cares. Thoughtful management
+            for owners. A better everyday experience for residents.
+          </p>
+          <div className="mt-9 flex flex-wrap gap-3">
+            <Button asChild variant="cyan" size="lg" className="h-12">
               <a href="#properties">
                 Explore properties <ArrowRight />
               </a>
             </Button>
-            <Button variant="outline" size="lg" asChild>
-              <a href="#contact">Talk to our team</a>
-            </Button>
+            <a
+              href="#owners"
+              className="inline-flex h-12 items-center gap-3 rounded-md border border-white/40 px-6 text-sm font-medium text-white transition-colors hover:bg-white/10"
+            >
+              Manage my property <ArrowRight className="size-4" />
+            </a>
+          </div>
+          <div className="mt-12 flex max-w-xl flex-wrap gap-x-6 gap-y-3 border-t border-white/20 pt-6 text-xs text-white/80">
+            <span>Residential property management</span>
+            <span>Owner-focused oversight</span>
+            <span>Resident support</span>
           </div>
         </div>
-        <div className="mx-auto mt-14 max-w-[1480px] px-0 sm:px-5">
-          <img
-            src={kitchen}
-            alt="Bright contemporary kitchen with island"
-            className="h-[42vh] min-h-80 w-full object-cover sm:min-h-96 sm:rounded-md lg:h-[62vh]"
-          />
-        </div>
       </header>
+      <div className="border-b border-border bg-card">
+        <div className="mx-auto grid max-w-7xl divide-y divide-border md:grid-cols-3 md:divide-x md:divide-y-0">
+          {[
+            {
+              icon: Building2,
+              title: "Find your next home",
+              copy: "Explore the Silverfox collection",
+              href: "#properties",
+            },
+            {
+              icon: ShieldCheck,
+              title: "Care for your investment",
+              copy: "Discover our approach to management",
+              href: "#owners",
+            },
+            {
+              icon: Wrench,
+              title: "Feel supported at home",
+              copy: "Connect with our property team",
+              href: "#residents",
+            },
+          ].map(({ icon: Icon, title, copy, href }) => (
+            <a
+              key={href}
+              href={href}
+              className="group flex items-center gap-4 px-6 py-7 transition-colors hover:bg-secondary"
+            >
+              <Icon className="size-6 shrink-0 text-accent" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-primary">{title}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{copy}</p>
+              </div>
+              <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
+            </a>
+          ))}
+        </div>
+      </div>
 
       <PropertyListings />
 
-      <section id="management" className="bg-card py-16 lg:py-28">
+      <section id="management" className="bg-card py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <div className="grid gap-10 border-b border-border pb-14 lg:grid-cols-[1fr_.75fr] lg:items-end">
+          <div className="grid gap-10 border-b border-border pb-8 lg:grid-cols-[1fr_.75fr] lg:items-end">
             <div>
               <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-accent">
                 How we manage
@@ -61,7 +111,7 @@ export default function Home() {
               properties performing and people feeling at home.
             </p>
           </div>
-          <div className="grid gap-10 pt-14 md:grid-cols-3">
+          <div className="grid gap-6 pt-8 md:grid-cols-3">
             {[
               [
                 ShieldCheck,
@@ -84,7 +134,10 @@ export default function Home() {
             ].map(([Icon, number, title, copy]) => {
               const ServiceIcon = Icon as typeof ShieldCheck;
               return (
-                <article key={String(number)} className="border-t border-border pt-6">
+                <article
+                  key={String(number)}
+                  className="rounded-lg border border-border bg-background p-7"
+                >
                   <div className="mb-7 flex items-center justify-between">
                     <ServiceIcon className="size-5 text-accent" />
                     <span className="font-serif text-2xl text-primary/30">{String(number)}</span>
@@ -108,7 +161,7 @@ export default function Home() {
               className="absolute inset-0 h-full w-full object-cover object-[50%_65%]"
             />
           </div>
-          <div className="order-1 flex items-center px-5 py-9 sm:px-8 md:order-2 md:px-10 lg:px-12 lg:py-12">
+          <div className="order-1 flex items-center px-5 py-12 sm:px-8 md:order-2 md:px-10 lg:px-12 lg:py-16">
             <div className="max-w-xl">
               <p className="mb-3 text-xs font-bold uppercase text-accent">For property owners</p>
               <h2 className="font-serif text-3xl leading-tight sm:text-4xl">
@@ -141,7 +194,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="residents" className="py-16 lg:py-28">
+      <section id="residents" className="py-16 lg:py-20">
         <div className="mx-auto grid max-w-7xl gap-12 px-5 lg:grid-cols-12 lg:items-center lg:px-8">
           <div className="lg:col-span-5">
             <p className="mb-5 text-xs font-bold uppercase tracking-[0.18em] text-accent">
@@ -177,44 +230,47 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="contact" className="bg-secondary py-16 lg:py-28">
-        <div className="mx-auto max-w-7xl px-5 text-center lg:px-8">
-          <p className="mb-5 text-xs font-bold uppercase tracking-[0.18em] text-accent">
-            Start a conversation
-          </p>
-          <h2 className="mx-auto max-w-3xl font-serif text-4xl text-primary sm:text-6xl">
-            Property management, made more personal.
-          </h2>
-          <p className="mx-auto mt-6 max-w-xl leading-7 text-muted-foreground">
-            Whether you own a property or are looking for a place to call home, we would be pleased
-            to hear from you.
-          </p>
-          <div className="mt-9 flex flex-wrap justify-center gap-3">
-            <Button variant="brand" size="lg" asChild>
-              <a href="mailto:Info@silverfoxpropertymanagement.co.ke">
-                <Mail />
-                Email us
-              </a>
-            </Button>
-            <Button variant="outline" size="lg" asChild>
-              <a href="tel:+254701507570">
-                <Phone />
-                Call us
-              </a>
-            </Button>
+      <section id="contact" className="border-t border-border bg-secondary py-16 lg:py-20">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 lg:grid-cols-[1.2fr_1fr] lg:px-8">
+          <div>
+            <p className="mb-5 text-xs font-bold uppercase tracking-[.18em] text-accent">
+              Your next chapter
+            </p>
+            <h2 className="max-w-xl font-serif text-4xl leading-tight text-primary sm:text-5xl">
+              Let’s talk about
+              <br />
+              <span className="italic">your property.</span>
+            </h2>
+            <p className="mt-5 max-w-md text-sm leading-7 text-muted-foreground">
+              Looking for a home or a dependable management partner? Tell us what matters to you.
+              We’ll help you take the next step.
+            </p>
           </div>
-          <div className="mt-6 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground sm:flex-row sm:gap-6">
-            <a
-              href="mailto:Info@silverfoxpropertymanagement.co.ke"
-              className="inline-flex min-h-10 max-w-full items-center break-words transition-colors hover:text-foreground"
-            >
-              Info@silverfoxpropertymanagement.co.ke
+          <div className="min-w-0 divide-y divide-border border-y border-border">
+            <a href="tel:+254701507570" className="group flex items-center gap-5 py-7">
+              <span className="rounded-full bg-card p-4 text-accent">
+                <Phone className="size-5" />
+              </span>
+              <span className="flex-1">
+                <span className="block text-xs text-muted-foreground">Speak with our team</span>
+                <span className="mt-2 block text-xl font-semibold text-primary">0701 507570</span>
+              </span>
+              <ArrowRight className="size-5 text-primary transition-transform group-hover:translate-x-1" />
             </a>
             <a
-              href="tel:+254701507570"
-              className="inline-flex min-h-10 items-center transition-colors hover:text-foreground"
+              href="mailto:Info@silverfoxpropertymanagement.co.ke"
+              className="group flex min-w-0 items-center gap-5 py-7"
             >
-              0701 507570
+              <span className="rounded-full bg-card p-4 text-accent">
+                <Mail className="size-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs text-muted-foreground">Start a conversation</span>
+                <span className="mt-2 block break-words text-sm font-semibold text-primary">
+                  Info@silverfoxpropertymanagement.co.ke
+                </span>
+              </span>
+              <ArrowRight className="size-5 shrink-0 text-primary transition-transform group-hover:translate-x-1" />
             </a>
           </div>
         </div>

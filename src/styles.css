@@ -189,3 +189,51 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+@layer components {
+  .staff-login {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .admin-input {
+    width: 100%;
+    min-height: 3rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--background);
+    color: var(--foreground);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+  .admin-input:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .admin-input::placeholder {
+    color: var(--muted-foreground);
+  }
+  .admin-panel {
+    border: 1px solid var(--border);
+    border-radius: 0.875rem;
+    background: var(--card);
+    box-shadow: 0 2px 5px oklch(0.2 0.03 250 / 2%);
+  }
+  .admin-eyebrow {
+    margin-bottom: 0.75rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+  }
+  .admin-title {
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+  @media (min-width: 1024px) {
+    .staff-login {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+}

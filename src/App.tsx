@@ -4,6 +4,8 @@ import PropertyDetail from "./pages/PropertyDetail";
 import SiteHeader from "./components/SiteHeader";
 import SiteFooter from "./components/SiteFooter";
 import { properties } from "./data/properties";
+import StaffLogin from "./pages/StaffLogin";
+import Admin from "./pages/Admin";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   override state = { hasError: false };
@@ -72,6 +74,20 @@ export default function App() {
   }, []);
   const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
   const property = properties.find((item) => pathname === `/properties/${item.slug}`);
+  if (pathname === "/staff/login" || pathname === "/staff/forgot-password") {
+    return (
+      <ErrorBoundary>
+        <StaffLogin recovery={pathname === "/staff/forgot-password"} />
+      </ErrorBoundary>
+    );
+  }
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    return (
+      <ErrorBoundary>
+        <Admin path={pathname} />
+      </ErrorBoundary>
+    );
+  }
   return (
     <ErrorBoundary>
       <SiteHeader />

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Menu, Moon, Phone, Sun, X } from "lucide-react";
+import { Menu, Phone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/silverfox-logo.jpg";
+import ThemeToggle from "./ThemeToggle";
 
 const sections = [
   ["Properties", "properties"],
@@ -13,17 +14,6 @@ const sections = [
 
 export default function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
-  function toggleTheme() {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    try {
-      localStorage.setItem("silverfox-theme", next ? "dark" : "light");
-    } catch {
-      /* Theme still works when storage is unavailable. */
-    }
-  }
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-xl">
       <a
@@ -38,7 +28,7 @@ export default function SiteHeader() {
         </a>
         <nav
           aria-label="Main navigation"
-          className="hidden items-center gap-6 text-sm font-medium lg:flex"
+          className="hidden items-center gap-4 text-sm font-medium lg:flex"
         >
           {sections.map(([label, id]) => (
             <a
@@ -51,14 +41,9 @@ export default function SiteHeader() {
           ))}
         </nav>
         <div className="flex shrink-0 items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-            title={dark ? "Light mode" : "Dark mode"}
-          >
-            {dark ? <Sun /> : <Moon />}
+          <ThemeToggle />
+          <Button variant="outline" asChild className="hidden sm:inline-flex">
+            <a href="/staff/login">Staff Login</a>
           </Button>
           <Button variant="brand" asChild className="hidden xl:inline-flex">
             <a href="tel:+254701507570">
@@ -85,6 +70,12 @@ export default function SiteHeader() {
           aria-label="Mobile navigation"
           className="flex flex-col gap-1 border-t border-border px-5 py-3 lg:hidden"
         >
+          <a
+            href="/staff/login"
+            className="flex min-h-11 items-center text-sm font-semibold text-primary"
+          >
+            Staff Login
+          </a>
           {sections.map(([label, id]) => (
             <a
               key={id}

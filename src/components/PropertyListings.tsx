@@ -30,7 +30,7 @@ export default function PropertyListings() {
     setLocation("");
   }
   return (
-    <section id="properties" className="py-16 lg:py-24">
+    <section id="properties" className="py-16 lg:py-20">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
@@ -44,7 +44,7 @@ export default function PropertyListings() {
             our team.
           </p>
         </div>
-        <div className="grid gap-4 border-y border-border py-5 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr]">
+        <div className="grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr]">
           <label className="min-w-0 text-xs font-medium">
             Search properties
             <div className="relative mt-2">
