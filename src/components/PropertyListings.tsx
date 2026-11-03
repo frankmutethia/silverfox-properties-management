@@ -37,9 +37,11 @@ export default function PropertyListings() {
             <p className="mb-3 text-xs font-semibold uppercase text-accent">
               The Silverfox collection
             </p>
-            <h2 className="font-serif text-4xl text-primary sm:text-5xl">A place to call home.</h2>
+            <h2 className="text-4xl font-bold tracking-[-0.035em] text-primary sm:text-5xl">
+              A place to call home.
+            </h2>
           </div>
-          <p className="max-w-sm text-sm leading-6 text-muted-foreground">
+          <p className="max-w-sm text-sm font-medium leading-6 text-foreground/70">
             Explore our apartments and homes. Find a property that catches your eye, then talk to
             our team.
           </p>
@@ -53,7 +55,7 @@ export default function PropertyListings() {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Name, area or reference"
+                placeholder="Search"
                 className="h-10 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
             </div>

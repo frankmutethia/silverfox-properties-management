@@ -6,7 +6,7 @@ import ThemeToggle from "./ThemeToggle";
 
 const sections = [
   ["Properties", "properties"],
-  ["Management", "management"],
+  ["Our Services", "management"],
   ["For owners", "owners"],
   ["For residents", "residents"],
   ["Contact us", "contact"],

@@ -1,9 +1,27 @@
-import { ArrowRight, Building2, Check, Mail, Phone, ShieldCheck, Wrench } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  Check,
+  FileCheck2,
+  Handshake,
+  KeyRound,
+  Mail,
+  MessageCircle,
+  Phone,
+  ScrollText,
+  Search,
+  ShieldCheck,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import kitchen from "@/assets/aaron-huber-G7sE2S4Lab4-unsplash.jpg";
 import living from "@/assets/spacejoy-IH7wPsjwomc-unsplash.jpg";
 import view from "@/assets/infinite-views-79NjpXDOJU8-unsplash.jpg";
+import hero from "@/assets/tu-n-123-69K2AGQc_Yw-unsplash.jpg";
 import PropertyListings from "@/components/PropertyListings";
+import { whatsappUrl } from "@/lib/contact";
+import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 
 export default function Home() {
   return (
@@ -13,45 +31,46 @@ export default function Home() {
         className="relative overflow-hidden bg-brand-surface text-brand-surface-foreground"
       >
         <img
-          src={kitchen}
-          alt="Bright contemporary kitchen with a large island and elegant pendant lighting"
+          src={hero}
+          alt="Property professionals completing a real estate transaction beside a model home"
           fetchPriority="high"
-          className="absolute inset-0 h-full w-full object-cover object-[58%_50%] lg:left-[35%] lg:w-[65%] lg:object-[50%_52%]"
+          className="absolute inset-0 h-full w-full object-cover object-[58%_50%] sm:object-[55%_50%] lg:object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-surface via-brand-surface/80 to-brand-surface/20 lg:from-35% lg:via-brand-surface/40 lg:via-60% lg:to-transparent" />
-        <div className="relative mx-auto max-w-7xl px-5 py-16 sm:py-20 lg:px-8 lg:py-24">
-          <p className="mb-7 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[.2em] text-white/85 sm:text-xs">
-            <span className="h-px w-10 bg-accent" />
-            Inspired spaces. Personal service.
-          </p>
-          <h1 className="max-w-xl text-5xl font-semibold leading-[1.08] tracking-[-.045em] text-white sm:text-6xl lg:text-7xl">
-            Great places.
-            <br />
-            <span className="font-serif font-normal italic tracking-normal text-accent">
-              Better living.
-            </span>
-          </h1>
-          <p className="mt-7 max-w-md text-base leading-7 text-white/80">
-            Discover a place to call home, and a property partner who cares. Thoughtful management
-            for owners. A better everyday experience for residents.
-          </p>
-          <div className="mt-9 flex flex-wrap gap-3">
-            <Button asChild variant="cyan" size="lg" className="h-12">
-              <a href="#properties">
-                Explore properties <ArrowRight />
+        <div className="absolute inset-0 bg-brand-surface/25" />
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-surface via-brand-surface/90 to-brand-surface/25 sm:via-brand-surface/80 lg:from-brand-surface lg:via-brand-surface/75 lg:to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-surface/80 via-transparent to-brand-surface/20" />
+        <div className="relative mx-auto flex min-h-[620px] max-w-7xl items-center px-5 py-16 sm:min-h-[650px] sm:py-20 lg:px-8">
+          <div className="max-w-2xl">
+            <p className="mb-7 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[.2em] text-white sm:text-xs">
+              <span className="h-px w-10 bg-accent" />
+              Property expertise. Personal service.
+            </p>
+            <h1 className="max-w-2xl text-5xl font-bold leading-[1.04] tracking-[-.045em] text-white sm:text-6xl lg:text-7xl">
+              Property decisions,
+              <span className="block text-accent">managed with confidence.</span>
+            </h1>
+            <p className="mt-7 max-w-xl text-base font-medium leading-7 text-white/90 sm:text-lg sm:leading-8">
+              From property searches and due diligence to sales, transfers and tenancy management,
+              Silverfox provides clear guidance at every stage.
+            </p>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <Button asChild variant="cyan" size="lg" className="h-12">
+                <a href="#properties">
+                  Explore properties <ArrowRight />
+                </a>
+              </Button>
+              <a
+                href="#owners"
+                className="inline-flex h-12 items-center gap-3 rounded-md border border-white/40 px-6 text-sm font-medium text-white transition-colors hover:bg-white/10"
+              >
+                Manage my property <ArrowRight className="size-4" />
               </a>
-            </Button>
-            <a
-              href="#owners"
-              className="inline-flex h-12 items-center gap-3 rounded-md border border-white/40 px-6 text-sm font-medium text-white transition-colors hover:bg-white/10"
-            >
-              Manage my property <ArrowRight className="size-4" />
-            </a>
-          </div>
-          <div className="mt-12 flex max-w-xl flex-wrap gap-x-6 gap-y-3 border-t border-white/20 pt-6 text-xs text-white/80">
-            <span>Residential property management</span>
-            <span>Owner-focused oversight</span>
-            <span>Resident support</span>
+            </div>
+            <div className="mt-12 grid max-w-2xl gap-3 border-t border-white/25 pt-6 text-xs font-semibold text-white/90 sm:grid-cols-3">
+              <span>Purchase advisory</span>
+              <span>Sales & transfer support</span>
+              <span>Tenancy management</span>
+            </div>
           </div>
         </div>
       </header>
@@ -67,8 +86,8 @@ export default function Home() {
             {
               icon: ShieldCheck,
               title: "Care for your investment",
-              copy: "Discover our approach to management",
-              href: "#owners",
+              copy: "Explore purchase and management services",
+              href: "#management",
             },
             {
               icon: Wrench,
@@ -97,56 +116,75 @@ export default function Home() {
 
       <section id="management" className="bg-card py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <div className="grid gap-10 border-b border-border pb-8 lg:grid-cols-[1fr_.75fr] lg:items-end">
+          <div className="grid gap-8 border-b border-border pb-10 lg:grid-cols-[1fr_.9fr] lg:items-end">
             <div>
               <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-accent">
-                How we manage
+                Our services
               </p>
-              <h2 className="font-serif text-4xl text-primary sm:text-5xl">
-                Care that protects value.
+              <h2 className="max-w-2xl text-4xl font-bold leading-tight tracking-[-0.035em] text-primary sm:text-5xl">
+                Guidance through every stage of property ownership.
               </h2>
             </div>
-            <p className="border-l-2 border-accent/40 pl-6 leading-7 text-muted-foreground">
-              From daily communication to long-term planning, we look after the details that keep
-              properties performing and people feeling at home.
+            <p className="border-l-2 border-accent pl-6 text-base font-medium leading-7 text-foreground/75">
+              Silverfox supports buyers, sellers and property owners with practical coordination,
+              careful documentation and dependable day-to-day management.
             </p>
           </div>
-          <div className="grid gap-6 pt-8 md:grid-cols-3">
-            {[
-              [
-                ShieldCheck,
-                "01",
-                "Thoughtful stewardship",
-                "Clear oversight and consistent care shaped around each property and owner.",
-              ],
-              [
-                Wrench,
-                "02",
-                "Proactive maintenance",
-                "Routine attention and timely coordination help prevent small issues becoming costly ones.",
-              ],
-              [
-                Building2,
-                "03",
-                "Resident experience",
-                "Responsive, respectful support creates better tenancies and well-cared-for homes.",
-              ],
-            ].map(([Icon, number, title, copy]) => {
-              const ServiceIcon = Icon as typeof ShieldCheck;
-              return (
-                <article
-                  key={String(number)}
-                  className="rounded-lg border border-border bg-background p-7"
-                >
-                  <div className="mb-7 flex items-center justify-between">
-                    <ServiceIcon className="size-5 text-accent" />
-                    <span className="font-serif text-2xl text-primary/30">{String(number)}</span>
-                  </div>
-                  <h3 className="mb-3 text-lg font-semibold text-primary">{String(title)}</h3>
-                  <p className="text-sm leading-6 text-muted-foreground">{String(copy)}</p>
-                </article>
-              );
-            })}
+          <div className="grid gap-6 pt-10 lg:grid-cols-2">
+            <ServiceGroup
+              number="01"
+              title="Property Purchase Services"
+              description="Professional support for clients buying or selling property, from the initial search through completion."
+              services={[
+                {
+                  icon: Search,
+                  title: "Property search & acquisition support",
+                  copy: "Targeted property searches, shortlisting and buyer representation aligned with your requirements and investment priorities.",
+                },
+                {
+                  icon: FileCheck2,
+                  title: "Due diligence coordination",
+                  copy: "Structured review and coordination of ownership, property and transaction documentation before a purchase proceeds.",
+                },
+                {
+                  icon: Handshake,
+                  title: "Buyer & seller representation",
+                  copy: "Professional representation for property sales and purchases, with clear coordination between the parties throughout the transaction.",
+                },
+                {
+                  icon: ScrollText,
+                  title: "Agreements & transfer support",
+                  copy: "Drafting and coordination of sale and lease agreements, together with practical assistance during the property transfer process.",
+                },
+              ]}
+            />
+            <ServiceGroup
+              number="02"
+              title="Property Management Services"
+              description="Consistent administration and oversight designed to protect the property and support effective tenancies."
+              services={[
+                {
+                  icon: KeyRound,
+                  title: "Tenancy agreement administration",
+                  copy: "Preparation and administration of tenancy agreements, renewals and the records required for a clear landlord–tenant relationship.",
+                },
+                {
+                  icon: ShieldCheck,
+                  title: "Tenancy notices & transitions",
+                  copy: "Preparation and coordination of tenancy and eviction notices, with attention to agreed terms and the applicable process.",
+                },
+                {
+                  icon: Building2,
+                  title: "Property & resident oversight",
+                  copy: "A dependable point of contact for occupancy matters, resident communication and the routine administration of managed properties.",
+                },
+                {
+                  icon: Wrench,
+                  title: "Maintenance coordination",
+                  copy: "Timely coordination of maintenance needs and service providers to help preserve condition, usability and long-term property value.",
+                },
+              ]}
+            />
           </div>
         </div>
       </section>
@@ -164,10 +202,10 @@ export default function Home() {
           <div className="order-1 flex items-center px-5 py-12 sm:px-8 md:order-2 md:px-10 lg:px-12 lg:py-16">
             <div className="max-w-xl">
               <p className="mb-3 text-xs font-bold uppercase text-accent">For property owners</p>
-              <h2 className="font-serif text-3xl leading-tight sm:text-4xl">
+              <h2 className="text-3xl font-bold leading-tight tracking-[-0.025em] sm:text-4xl">
                 Confidence in every detail.
               </h2>
-              <p className="mt-4 text-sm leading-6 text-brand-surface-foreground/80">
+              <p className="mt-4 text-sm font-medium leading-7 text-brand-surface-foreground/85">
                 Your property deserves attentive management and clear communication. We provide a
                 dependable point of contact for the work that protects your investment.
               </p>
@@ -200,10 +238,10 @@ export default function Home() {
             <p className="mb-5 text-xs font-bold uppercase tracking-[0.18em] text-accent">
               For residents
             </p>
-            <h2 className="font-serif text-4xl text-primary sm:text-5xl">
+            <h2 className="text-4xl font-bold tracking-[-0.035em] text-primary sm:text-5xl">
               A home supported with care.
             </h2>
-            <p className="mt-6 max-w-md leading-7 text-muted-foreground">
+            <p className="mt-6 max-w-md font-medium leading-7 text-foreground/75">
               Good management should feel simple: clear communication, considerate service, and help
               when you need it.
             </p>
@@ -236,17 +274,37 @@ export default function Home() {
             <p className="mb-5 text-xs font-bold uppercase tracking-[.18em] text-accent">
               Your next chapter
             </p>
-            <h2 className="max-w-xl font-serif text-4xl leading-tight text-primary sm:text-5xl">
+            <h2 className="max-w-xl text-4xl font-bold leading-tight tracking-[-0.035em] text-primary sm:text-5xl">
               Let’s talk about
               <br />
-              <span className="italic">your property.</span>
+              <span className="text-accent">your property.</span>
             </h2>
-            <p className="mt-5 max-w-md text-sm leading-7 text-muted-foreground">
+            <p className="mt-5 max-w-md text-sm font-medium leading-7 text-foreground/75">
               Looking for a home or a dependable management partner? Tell us what matters to you.
               We’ll help you take the next step.
             </p>
           </div>
           <div className="min-w-0 divide-y divide-border border-y border-border">
+            <a
+              href={whatsappUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-5 py-7"
+            >
+              <span className="rounded-full bg-emerald-700 p-4 text-white">
+                <MessageCircle className="size-5" aria-hidden="true" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs text-muted-foreground">
+                  An enquiry starts with hello
+                </span>
+                <span className="mt-2 block text-xl font-semibold text-primary">
+                  Chat on WhatsApp
+                </span>
+                <span className="mt-1 block text-sm text-muted-foreground">+254 701 507570</span>
+              </span>
+              <ArrowRight className="size-5 shrink-0 text-primary transition-transform group-hover:translate-x-1" />
+            </a>
             <a href="tel:+254701507570" className="group flex items-center gap-5 py-7">
               <span className="rounded-full bg-card p-4 text-accent">
                 <Phone className="size-5" />
@@ -275,6 +333,55 @@ export default function Home() {
           </div>
         </div>
       </section>
+      <FloatingWhatsApp />
     </main>
+  );
+}
+
+interface ServiceItem {
+  icon: LucideIcon;
+  title: string;
+  copy: string;
+}
+
+function ServiceGroup({
+  number,
+  title,
+  description,
+  services,
+}: {
+  number: string;
+  title: string;
+  description: string;
+  services: ServiceItem[];
+}) {
+  return (
+    <article className="overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+      <div className="border-b border-border bg-primary p-6 text-primary-foreground sm:p-8">
+        <div className="mb-5 flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-[0.18em] text-accent">
+            Service category
+          </span>
+          <span className="text-sm font-bold text-primary-foreground/60">{number}</span>
+        </div>
+        <h3 className="text-2xl font-bold tracking-[-0.025em] sm:text-3xl">{title}</h3>
+        <p className="mt-3 max-w-xl text-sm font-medium leading-6 text-primary-foreground/80">
+          {description}
+        </p>
+      </div>
+      <div className="divide-y divide-border px-6 sm:px-8">
+        {services.map(({ icon: Icon, title: serviceTitle, copy }) => (
+          <div key={serviceTitle} className="grid gap-4 py-6 sm:grid-cols-[44px_1fr]">
+            <span className="flex size-11 items-center justify-center rounded-lg bg-accent/10 text-accent">
+              <Icon className="size-5" aria-hidden="true" />
+            </span>
+            <div>
+              <h4 className="text-base font-bold text-primary">{serviceTitle}</h4>
+              <p className="mt-2 text-sm font-medium leading-6 text-foreground/70">{copy}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </article>
   );
 }

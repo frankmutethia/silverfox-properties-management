@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { ArrowLeft, Check, Mail, MapPin, Phone } from "lucide-react";
+import { ArrowLeft, Check, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { whatsappUrl } from "@/lib/contact";
 import { type Property, propertyPrice } from "@/data/properties";
 import { Button } from "@/components/ui/button";
 import PropertyFacts from "@/components/PropertyFacts";
@@ -118,9 +119,24 @@ export default function PropertyDetail({ property }: { property: Property }) {
             Ask about availability, confirmed specifications or arrange a viewing with our team.
           </p>
           <Button asChild size="lg" className="mt-6 w-full">
+            <a
+              href={whatsappUrl(
+                `Hello Silverfox, I would like to enquire about ${property.name} (${property.reference}). Please share availability, pricing and viewing arrangements.`,
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <MessageCircle />
+              Enquire on WhatsApp
+            </a>
+          </Button>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            Opens WhatsApp with this property ready to enquire about. Send when you are ready.
+          </p>
+          <Button asChild size="lg" variant="outline" className="mt-3 w-full">
             <a href={enquiry}>
               <Mail />
-              Enquire about this property
+              Enquire by email
             </a>
           </Button>
           <Button asChild size="lg" variant="outline" className="mt-3 w-full">
