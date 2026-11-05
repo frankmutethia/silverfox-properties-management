@@ -1,9 +1,10 @@
+import Blogs from "@/pages/AdminBlogs";
+import { readDrafts, type Draft } from "@/lib/blogs";
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
   Building2,
-  CheckCircle2,
   ChevronDown,
   ChevronRight,
   CircleHelp,
@@ -16,9 +17,16 @@ import {
   PanelLeftOpen,
   Plus,
   Search,
+  BriefcaseBusiness,
+  UserRound,
+  MessageSquareQuote,
 } from "lucide-react";
-import { properties, propertyPrice } from "@/data/properties";
+import { properties, propertyPrice, propertyCategories } from "@/data/properties";
 import CreateProperty from "@/components/CreateProperty";
+import AdminServices from "@/pages/AdminServices";
+import AdminProfile from "@/pages/AdminProfile";
+import AdminTestimonials from "@/pages/AdminTestimonials";
+import { readProfile } from "@/lib/profile";
 import PropertyGallery from "@/components/PropertyGallery";
 import PropertyFacts from "@/components/PropertyFacts";
 import { readLocalProperties } from "@/lib/local-properties";
@@ -45,30 +53,14 @@ import {
 const navigation = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Properties", href: "/admin/properties", icon: Building2 },
+  { label: "Services", href: "/admin/services", icon: BriefcaseBusiness },
   { label: "Blogs", href: "/admin/blogs", icon: FileText },
+  { label: "Testimonials", href: "/admin/testimonials", icon: MessageSquareQuote },
+  { label: "Profile", href: "/admin/profile", icon: UserRound },
 ];
-type Draft = { id: string; title: string; body: string; updated: string };
-const draftKey = "silverfox-blog-drafts";
-function readDrafts(): Draft[] {
-  try {
-    const data: unknown = JSON.parse(localStorage.getItem(draftKey) ?? "[]");
-    return Array.isArray(data)
-      ? data.filter(
-          (item): item is Draft =>
-            item &&
-            typeof item.id === "string" &&
-            typeof item.title === "string" &&
-            typeof item.body === "string" &&
-            typeof item.updated === "string",
-        )
-      : [];
-  } catch {
-    return [];
-  }
-}
-
 export default function Admin({ path }: { path: string }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [profile, setProfile] = useState(readProfile);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [localProperties, setLocalProperties] = useState(readLocalProperties);
   const collection = [...properties, ...localProperties];
@@ -222,12 +214,14 @@ export default function Admin({ path }: { path: string }) {
                     className="flex items-center gap-3 rounded-lg text-left"
                   >
                     <img
-                      src={avatar}
+                      src={profile.photo ?? avatar}
                       alt="Administrator avatar"
-                      className="size-10 rounded-full border-2 border-accent/25"
+                      className="size-10 rounded-full border-2 border-accent/25 object-cover"
                     />
                     <span className="hidden sm:block">
-                      <span className="block text-sm font-semibold">Administrator</span>
+                      <span className="block max-w-40 truncate text-sm font-semibold">
+                        {profile.name}
+                      </span>
                       <span className="block text-[11px] text-muted-foreground">
                         Staff workspace
                       </span>
@@ -236,8 +230,14 @@ export default function Admin({ path }: { path: string }) {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Administrator</DropdownMenuLabel>
+                  <DropdownMenuLabel className="truncate">{profile.name}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <a href="/admin/profile">
+                      <UserRound className="mr-2 size-4" />
+                      My profile
+                    </a>
+                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <a href="/">
                       <Globe className="mr-2 size-4" />
@@ -260,8 +260,14 @@ export default function Admin({ path }: { path: string }) {
             <Dashboard drafts={drafts} properties={collection} />
           ) : path === "/admin/properties" ? (
             <Properties properties={collection} onCreated={setLocalProperties} />
+          ) : path === "/admin/services" ? (
+            <AdminServices />
           ) : path === "/admin/blogs" ? (
             <Blogs drafts={drafts} onSave={setDrafts} />
+          ) : path === "/admin/profile" ? (
+            <AdminProfile profile={profile} onSave={setProfile} />
+          ) : path === "/admin/testimonials" ? (
+            <AdminTestimonials />
           ) : (
             <div className="admin-panel p-10">
               <h1 className="text-2xl font-semibold">Page not found</h1>
@@ -478,6 +484,12 @@ function Properties({
             <PropertyGallery property={selected} />
             <PropertyFacts property={selected} />
             <p className="font-semibold">{propertyPrice(selected)}</p>
+            <p>
+              {selected.category
+                ? propertyCategories[selected.category]
+                : "Category to be confirmed"}
+            </p>
+            <p className="whitespace-pre-line text-sm">{selected.neighbourhood}</p>
             <p className="text-sm leading-6">{selected.description}</p>
             <p className="text-sm text-muted-foreground">
               Amenities: {selected.amenities.join(", ") || "To be confirmed"}
@@ -541,6 +553,11 @@ function Properties({
                       />
                       <div className="whitespace-nowrap font-semibold">
                         {property.name}
+                        <p className="mt-1 text-xs text-accent">
+                          {property.category
+                            ? propertyCategories[property.category]
+                            : "Category to be confirmed"}
+                        </p>
                         <p className="mt-1 text-xs font-normal text-muted-foreground">
                           {property.reference} · {property.type}
                         </p>
@@ -584,149 +601,6 @@ function Properties({
           browser.
         </p>
       </section>
-    </>
-  );
-}
-
-function Blogs({ drafts, onSave }: { drafts: Draft[]; onSave: (drafts: Draft[]) => void }) {
-  const [editor, setEditor] = useState(false);
-  const [id, setId] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [notice, setNotice] = useState("");
-  function edit(draft?: Draft) {
-    setId(draft?.id ?? null);
-    setTitle(draft?.title ?? "");
-    setBody(draft?.body ?? "");
-    setNotice("");
-    setEditor(true);
-  }
-  return (
-    <>
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="admin-eyebrow">The Silverfox journal</p>
-          <h1 className="admin-title">Blogs</h1>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Ideas, insights and a little inspiration for better property care.
-          </p>
-        </div>
-        <Button onClick={() => edit()}>
-          <Plus />
-          New blog
-        </Button>
-      </div>
-      <p className="mb-6 text-xs leading-6 text-muted-foreground">
-        Drafts are saved on this browser only. Publishing and shared storage are not connected yet.
-      </p>
-      <p role="status" className="mb-4 text-sm text-primary">
-        {!editor && notice}
-      </p>
-      {drafts.length ? (
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {drafts.map((draft) => (
-            <article className="admin-panel p-6" key={draft.id}>
-              <span className="rounded-full bg-accent/10 px-3 py-1 text-xs text-primary">
-                Draft
-              </span>
-              <h2 className="mt-5 break-words text-xl font-semibold">{draft.title}</h2>
-              <p className="mt-3 line-clamp-3 break-words text-sm leading-6 text-muted-foreground">
-                {draft.body}
-              </p>
-              <p className="mt-5 text-xs text-muted-foreground">
-                Last saved {new Date(draft.updated).toLocaleDateString("en-GB")}
-              </p>
-              <Button variant="outline" className="mt-5" onClick={() => edit(draft)}>
-                Edit draft <ArrowRight />
-              </Button>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <section className="admin-panel flex min-h-[390px] flex-col items-center justify-center p-8 text-center">
-          <span className="mb-6 rounded-2xl bg-accent/10 p-5 text-accent">
-            <FileText className="size-8" />
-          </span>
-          <h2 className="text-xl font-semibold">Your next story starts here.</h2>
-          <p className="mb-7 mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
-            Share helpful advice, property insights and stories that bring owners and residents
-            closer to home.
-          </p>
-          <Button onClick={() => edit()}>
-            <Plus />
-            Create your first draft
-          </Button>
-        </section>
-      )}
-      <Dialog open={editor} onOpenChange={setEditor}>
-        <DialogContent className="max-h-[90dvh] max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-2xl">
-          <DialogTitle>{id ? "Edit blog draft" : "A new story"}</DialogTitle>
-          <DialogDescription>
-            Write for the Silverfox journal. Save your work as a local draft.
-          </DialogDescription>
-          <form
-            className="space-y-5"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (!title.trim() || !body.trim()) {
-                setNotice("Add a title and some content before saving.");
-                return;
-              }
-              const draft = {
-                id: id ?? crypto.randomUUID(),
-                title: title.trim(),
-                body: body.trim(),
-                updated: new Date().toISOString(),
-              };
-              const next = [draft, ...drafts.filter((item) => item.id !== draft.id)];
-              try {
-                localStorage.setItem(draftKey, JSON.stringify(next));
-                onSave(next);
-                setEditor(false);
-                setNotice("Draft saved in this browser.");
-              } catch {
-                setNotice(
-                  "Your draft could not be saved. Browser storage may be full or unavailable. Keep this window open and copy your work.",
-                );
-              }
-            }}
-          >
-            <label className="block text-sm font-medium">
-              Title
-              <input
-                className="admin-input mt-2"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder="Give your story a title"
-                maxLength={160}
-                required
-              />
-            </label>
-            <label className="block text-sm font-medium">
-              Content
-              <textarea
-                className="admin-input mt-2 min-h-56 resize-y"
-                value={body}
-                onChange={(event) => setBody(event.target.value)}
-                placeholder="Start with something worth sharing…"
-                required
-              />
-            </label>
-            <p role="status" className="text-sm text-muted-foreground">
-              {notice}
-            </p>
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" type="button" onClick={() => setEditor(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">
-                <CheckCircle2 />
-                Save draft
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

@@ -3,6 +3,8 @@ import type { Property } from "@/data/properties";
 
 const number = z.number().finite().nonnegative().nullable();
 const schema = z.object({
+  category: z.enum(["sale", "rent", "managed"]).nullable().default(null),
+  neighbourhood: z.string().nullable().default(null),
   slug: z.string().min(1),
   reference: z.string().min(1),
   name: z.string().min(1),
@@ -12,8 +14,8 @@ const schema = z.object({
     .object({ amount: z.number().finite().nonnegative(), currency: z.string(), period: z.string() })
     .nullable(),
   areaSqm: number,
-  bedrooms: number,
-  bathrooms: number,
+  bedrooms: z.number().int().nonnegative().nullable(),
+  bathrooms: z.number().int().nonnegative().nullable(),
   amenities: z.array(z.string()),
   description: z.string(),
   images: z
@@ -32,7 +34,18 @@ export function readLocalProperties(): Property[] {
   }
 }
 export function saveLocalProperty(property: Property) {
-  const next = [...readLocalProperties(), property];
+  const validated = schema.parse(property);
+  if (!validated.category || !validated.location?.trim())
+    throw new Error("Category and location are required");
+  if (validated.category === "managed") validated.price = null;
+  if (validated.category === "sale" && validated.price) validated.price.period = "";
+  if (
+    validated.category === "rent" &&
+    validated.price &&
+    !["month", "year"].includes(validated.price.period)
+  )
+    throw new Error("Choose a rental period");
+  const next = [...readLocalProperties(), validated as Property];
   localStorage.setItem(key, JSON.stringify(next));
   return next;
 }

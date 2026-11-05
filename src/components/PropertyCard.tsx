@@ -1,5 +1,5 @@
 import { ArrowUpRight, MapPin } from "lucide-react";
-import { type Property, propertyPrice } from "@/data/properties";
+import { type Property, propertyPrice, propertyCategories } from "@/data/properties";
 import PropertyFacts from "./PropertyFacts";
 
 export default function PropertyCard({ property }: { property: Property }) {
@@ -22,6 +22,11 @@ export default function PropertyCard({ property }: { property: Property }) {
           <span className="absolute left-4 top-4 rounded-sm bg-background/95 px-3 py-1 text-xs font-semibold">
             {property.type}
           </span>
+          {property.category && (
+            <span className="absolute bottom-4 left-4 rounded bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
+              {propertyCategories[property.category]}
+            </span>
+          )}
         </div>
         <div className="p-5">
           <div className="flex items-start justify-between gap-3">

@@ -1,15 +1,11 @@
+import { serviceGroups } from "@/data/services";
 import {
   ArrowRight,
   Building2,
   Check,
-  FileCheck2,
-  Handshake,
-  KeyRound,
   Mail,
   MessageCircle,
   Phone,
-  ScrollText,
-  Search,
   ShieldCheck,
   Wrench,
   type LucideIcon,
@@ -22,6 +18,8 @@ import hero from "@/assets/tu-n-123-69K2AGQc_Yw-unsplash.jpg";
 import PropertyListings from "@/components/PropertyListings";
 import { whatsappUrl } from "@/lib/contact";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
+import BlogSection from "@/components/BlogSection";
+import Testimonials from "@/components/Testimonials";
 
 export default function Home() {
   return (
@@ -36,40 +34,31 @@ export default function Home() {
           fetchPriority="high"
           className="absolute inset-0 h-full w-full object-cover object-[58%_50%] sm:object-[55%_50%] lg:object-center"
         />
-        <div className="absolute inset-0 bg-brand-surface/25" />
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-surface via-brand-surface/90 to-brand-surface/25 sm:via-brand-surface/80 lg:from-brand-surface lg:via-brand-surface/75 lg:to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-surface/80 via-transparent to-brand-surface/20" />
-        <div className="relative mx-auto flex min-h-[620px] max-w-7xl items-center px-5 py-16 sm:min-h-[650px] sm:py-20 lg:px-8">
-          <div className="max-w-2xl">
-            <p className="mb-7 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[.2em] text-white sm:text-xs">
-              <span className="h-px w-10 bg-accent" />
-              Property expertise. Personal service.
-            </p>
-            <h1 className="max-w-2xl text-5xl font-bold leading-[1.04] tracking-[-.045em] text-white sm:text-6xl lg:text-7xl">
-              Property decisions,
-              <span className="block text-accent">managed with confidence.</span>
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,29,53,0.90)_0%,rgba(0,29,53,0.68)_38%,rgba(0,29,53,0.12)_72%,transparent_100%)] max-sm:bg-[linear-gradient(90deg,rgba(0,29,53,0.88),rgba(0,29,53,0.45))]"
+        />
+        <div className="relative mx-auto flex min-h-[480px] max-w-7xl items-center px-5 py-16 sm:min-h-[540px] lg:min-h-[580px] lg:px-8">
+          <div className="max-w-lg">
+            <h1 className="text-5xl font-semibold leading-[1.08] tracking-[-.04em] text-white sm:text-6xl lg:text-7xl">
+              Your property.
+              <span className="block">Our priority.</span>
             </h1>
-            <p className="mt-7 max-w-xl text-base font-medium leading-7 text-white/90 sm:text-lg sm:leading-8">
-              From property searches and due diligence to sales, transfers and tenancy management,
-              Silverfox provides clear guidance at every stage.
+            <p className="mt-6 max-w-sm text-base leading-7 text-white/95 sm:text-lg">
+              Buy, sell and manage property with a team you can rely on.
             </p>
-            <div className="mt-9 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
               <Button asChild variant="cyan" size="lg" className="h-12">
                 <a href="#properties">
                   Explore properties <ArrowRight />
                 </a>
               </Button>
               <a
-                href="#owners"
-                className="inline-flex h-12 items-center gap-3 rounded-md border border-white/40 px-6 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                href="#management"
+                className="inline-flex min-h-12 items-center gap-2 text-sm font-semibold text-white underline decoration-white/50 underline-offset-8 transition-colors hover:decoration-white"
               >
-                Manage my property <ArrowRight className="size-4" />
+                Our services <ArrowRight className="size-4" />
               </a>
-            </div>
-            <div className="mt-12 grid max-w-2xl gap-3 border-t border-white/25 pt-6 text-xs font-semibold text-white/90 sm:grid-cols-3">
-              <span>Purchase advisory</span>
-              <span>Sales & transfer support</span>
-              <span>Tenancy management</span>
             </div>
           </div>
         </div>
@@ -131,63 +120,15 @@ export default function Home() {
             </p>
           </div>
           <div className="grid gap-6 pt-10 lg:grid-cols-2">
-            <ServiceGroup
-              number="01"
-              title="Property Purchase Services"
-              description="Professional support for clients buying or selling property, from the initial search through completion."
-              services={[
-                {
-                  icon: Search,
-                  title: "Property search & acquisition support",
-                  copy: "Targeted property searches, shortlisting and buyer representation aligned with your requirements and investment priorities.",
-                },
-                {
-                  icon: FileCheck2,
-                  title: "Due diligence coordination",
-                  copy: "Structured review and coordination of ownership, property and transaction documentation before a purchase proceeds.",
-                },
-                {
-                  icon: Handshake,
-                  title: "Buyer & seller representation",
-                  copy: "Professional representation for property sales and purchases, with clear coordination between the parties throughout the transaction.",
-                },
-                {
-                  icon: ScrollText,
-                  title: "Agreements & transfer support",
-                  copy: "Drafting and coordination of sale and lease agreements, together with practical assistance during the property transfer process.",
-                },
-              ]}
-            />
-            <ServiceGroup
-              number="02"
-              title="Property Management Services"
-              description="Consistent administration and oversight designed to protect the property and support effective tenancies."
-              services={[
-                {
-                  icon: KeyRound,
-                  title: "Tenancy agreement administration",
-                  copy: "Preparation and administration of tenancy agreements, renewals and the records required for a clear landlord–tenant relationship.",
-                },
-                {
-                  icon: ShieldCheck,
-                  title: "Tenancy notices & transitions",
-                  copy: "Preparation and coordination of tenancy and eviction notices, with attention to agreed terms and the applicable process.",
-                },
-                {
-                  icon: Building2,
-                  title: "Property & resident oversight",
-                  copy: "A dependable point of contact for occupancy matters, resident communication and the routine administration of managed properties.",
-                },
-                {
-                  icon: Wrench,
-                  title: "Maintenance coordination",
-                  copy: "Timely coordination of maintenance needs and service providers to help preserve condition, usability and long-term property value.",
-                },
-              ]}
-            />
+            {serviceGroups.map((group) => (
+              <ServiceGroup key={group.number} {...group} />
+            ))}
           </div>
         </div>
       </section>
+
+      <BlogSection />
+      <Testimonials />
 
       <section id="owners" className="bg-brand-surface text-brand-surface-foreground">
         <div className="mx-auto grid max-w-7xl md:grid-cols-[2fr_3fr]">

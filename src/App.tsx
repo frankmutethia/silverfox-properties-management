@@ -1,5 +1,7 @@
 import { Component, useEffect, type ErrorInfo, type ReactNode } from "react";
 import Home from "./pages/Home";
+import BlogDetail from "./pages/BlogDetail";
+import { articles } from "./data/articles";
 import PropertyDetail from "./pages/PropertyDetail";
 import SiteHeader from "./components/SiteHeader";
 import SiteFooter from "./components/SiteFooter";
@@ -74,6 +76,7 @@ export default function App() {
   }, []);
   const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
   const property = properties.find((item) => pathname === `/properties/${item.slug}`);
+  const article = articles.find((item) => pathname === `/blogs/${item.slug}`);
   if (pathname === "/staff/login" || pathname === "/staff/forgot-password") {
     return (
       <ErrorBoundary>
@@ -95,6 +98,8 @@ export default function App() {
         <Home />
       ) : property ? (
         <PropertyDetail property={property} />
+      ) : article ? (
+        <BlogDetail article={article} />
       ) : (
         <StatusPage
           title="404 - Page not found"

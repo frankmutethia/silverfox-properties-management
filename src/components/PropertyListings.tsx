@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { properties } from "@/data/properties";
+import { properties, propertyCategories } from "@/data/properties";
 import { Button } from "@/components/ui/button";
 import PropertyCard from "./PropertyCard";
 
 export default function PropertyListings() {
   const [query, setQuery] = useState("");
   const [type, setType] = useState("");
+  const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
   const locations = [
     ...new Set(
@@ -18,15 +19,17 @@ export default function PropertyListings() {
   const filtered = properties.filter(
     (property) =>
       (!type || property.type === type) &&
+      (!category || property.category === category) &&
       (!location || (property.location ?? "unconfirmed") === location) &&
       `${property.name} ${property.reference} ${property.location ?? ""} ${property.type}`
         .toLowerCase()
         .includes(query.trim().toLowerCase()),
   );
-  const hasFilters = Boolean(query || type || location);
+  const hasFilters = Boolean(query || type || location || category);
   function reset() {
     setQuery("");
     setType("");
+    setCategory("");
     setLocation("");
   }
   return (
@@ -46,7 +49,22 @@ export default function PropertyListings() {
             our team.
           </p>
         </div>
-        <div className="grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr]">
+        <div className="grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="min-w-0 text-xs font-medium">
+            Listing category
+            <select
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+              className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-ring"
+            >
+              <option value="">All categories</option>
+              {Object.entries(propertyCategories).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="min-w-0 text-xs font-medium">
             Search properties
             <div className="relative mt-2">

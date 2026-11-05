@@ -13,6 +13,7 @@ export default function CreateProperty({
   onCreated: (items: Property[]) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [category, setCategory] = useState("sale");
   const [photos, setPhotos] = useState<PropertyImage[]>([]);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -61,8 +62,17 @@ export default function CreateProperty({
     const data = new FormData(event.currentTarget);
     const value = (name: string) => String(data.get(name) ?? "").trim();
     const numeric = (name: string) => (value(name) === "" ? null : Number(value(name)));
-    if (!value("name") || !value("reference") || !value("description") || !photos.length) {
-      setError("Add a property name, reference, description and at least one photo.");
+    if (
+      !value("name") ||
+      !value("reference") ||
+      !value("location") ||
+      !value("description") ||
+      !photos.length ||
+      photos.some((photo) => !photo.alt.trim())
+    ) {
+      setError(
+        "Add a property name, reference, location, description and at least one photo with a description.",
+      );
       return;
     }
     if (
@@ -77,9 +87,17 @@ export default function CreateProperty({
       reference: value("reference"),
       name: value("name"),
       type: value("type") as Property["type"],
+      category: category as Property["category"],
+      neighbourhood: value("neighbourhood") || null,
       location: value("location") || null,
       price:
-        amount === null ? null : { amount, currency: value("currency"), period: value("period") },
+        amount === null || category === "managed"
+          ? null
+          : {
+              amount,
+              currency: value("currency"),
+              period: category === "rent" ? value("period") : "",
+            },
       areaSqm: numeric("area"),
       bedrooms: numeric("bedrooms"),
       bathrooms: numeric("bathrooms"),
@@ -156,6 +174,23 @@ export default function CreateProperty({
               </legend>
               {field("name", "Property name", true)}
               {field("reference", "Reference", true)}
+              <label className="block text-sm font-medium sm:col-span-2">
+                Listing category *
+                <select
+                  required
+                  name="category"
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                  className="admin-input mt-2"
+                >
+                  <option value="sale">For sale</option>
+                  <option value="rent">For rent</option>
+                  <option value="managed">Managed property</option>
+                </select>
+                <span className="mt-2 block text-xs text-muted-foreground">
+                  Choose the purpose of the listing. Property type describes the building itself.
+                </span>
+              </label>
               <label className="block text-sm font-medium">
                 Property type *
                 <select name="type" className="admin-input mt-2">
@@ -163,7 +198,16 @@ export default function CreateProperty({
                   <option>House</option>
                 </select>
               </label>
-              {field("location", "Location")}
+              {field("location", "Location / area", true)}
+              <label className="block text-sm font-medium sm:col-span-2">
+                Neighbourhood & viewing directions
+                <textarea
+                  name="neighbourhood"
+                  className="admin-input mt-2 min-h-20"
+                  maxLength={2000}
+                  placeholder="Nearby landmarks, access and useful location details"
+                />
+              </label>
               <label className="block text-sm font-medium sm:col-span-2">
                 Description *
                 <textarea
@@ -178,22 +222,38 @@ export default function CreateProperty({
               <legend className="mb-4 text-xs font-bold uppercase tracking-wider text-accent">
                 Pricing & specifications
               </legend>
-              {field("amount", "Price", false, "number")}
-              <label className="block text-sm font-medium">
-                Currency
-                <select name="currency" className="admin-input mt-2">
-                  <option>KES</option>
-                  <option>USD</option>
-                </select>
-              </label>
-              <label className="block text-sm font-medium">
-                Price period
-                <select name="period" className="admin-input mt-2">
-                  <option value="month">Per month</option>
-                  <option value="year">Per year</option>
-                  <option value="">Sale price</option>
-                </select>
-              </label>
+              {category !== "managed" && (
+                <>
+                  {field(
+                    "amount",
+                    category === "sale" ? "Sale price" : "Rent amount",
+                    false,
+                    "number",
+                  )}
+                  <label className="block text-sm font-medium">
+                    Currency
+                    <select name="currency" className="admin-input mt-2">
+                      <option>KES</option>
+                      <option>USD</option>
+                    </select>
+                  </label>
+                  {category === "rent" && (
+                    <label className="block text-sm font-medium">
+                      Price period
+                      <select name="period" className="admin-input mt-2">
+                        <option value="month">Per month</option>
+                        <option value="year">Per year</option>
+                      </select>
+                    </label>
+                  )}
+                </>
+              )}
+              {category === "managed" && (
+                <p className="text-sm text-muted-foreground sm:col-span-3">
+                  This is a managed portfolio property, not an offer for sale or rent. No public
+                  price is needed.
+                </p>
+              )}
               {field("bedrooms", "Bedrooms (0 for studio)", false, "number")}
               {field("bathrooms", "Bathrooms", false, "number")}
               {field("area", "Floor area (m²)", false, "number")}

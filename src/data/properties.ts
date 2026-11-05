@@ -10,7 +10,15 @@ export interface PropertyImage {
   position?: string;
 }
 
+export const propertyCategories = {
+  sale: "For sale",
+  rent: "For rent",
+  managed: "Managed property",
+} as const;
+
 export interface Property {
+  category: "sale" | "rent" | "managed" | null;
+  neighbourhood: string | null;
   slug: string;
   reference: string;
   name: string;
@@ -27,6 +35,8 @@ export interface Property {
 
 // Only verified listing facts belong here. A null value means not yet confirmed.
 const unconfirmed = {
+  category: null,
+  neighbourhood: null,
   location: null,
   price: null,
   areaSqm: null,
@@ -101,6 +111,7 @@ export const properties: Property[] = [
 ];
 
 export function propertyPrice(property: Property) {
+  if (property.category === "managed") return "Managed by Silverfox";
   if (!property.price) return "Price on enquiry";
   const { amount, currency, period } = property.price;
   return `${currency} ${new Intl.NumberFormat("en-KE").format(amount)}${period ? ` / ${period}` : ""}`;

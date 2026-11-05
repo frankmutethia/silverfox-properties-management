@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { ArrowLeft, Check, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { whatsappUrl } from "@/lib/contact";
-import { type Property, propertyPrice } from "@/data/properties";
+import { type Property, propertyPrice, propertyCategories } from "@/data/properties";
 import { Button } from "@/components/ui/button";
 import PropertyFacts from "@/components/PropertyFacts";
 import PropertyGallery from "@/components/PropertyGallery";
@@ -14,7 +14,8 @@ export default function PropertyDetail({ property }: { property: Property }) {
       document.title = previousTitle;
     };
   }, [property.name]);
-  const enquiry = `mailto:Info@silverfoxpropertymanagement.co.ke?subject=${encodeURIComponent(`Property enquiry: ${property.name} (${property.reference})`)}&body=${encodeURIComponent(`Hello Silverfox,\n\nI would like more information about ${property.name} (${property.reference}), including its location, price, availability and viewing arrangements.\n\nThank you.`)}`;
+  const message = `Hello Silverfox, I would like to enquire about ${property.name} (${property.reference}). ${property.category === "managed" ? "Please share information about your property management services." : "Please share availability, pricing and viewing arrangements."}`;
+  const enquiry = `mailto:Info@silverfoxpropertymanagement.co.ke?subject=${encodeURIComponent(`Property enquiry: ${property.name} (${property.reference})`)}&body=${encodeURIComponent(message)}`;
   return (
     <main id="main-content" className="mx-auto max-w-7xl px-5 pb-20 pt-8 lg:px-8">
       <a
@@ -69,6 +70,12 @@ export default function PropertyDetail({ property }: { property: Property }) {
             <PropertyFacts property={property} />
             <dl className="grid gap-5 py-6 sm:grid-cols-2">
               <div>
+                <dt className="text-sm text-muted-foreground">Listing category</dt>
+                <dd className="mt-1 font-medium">
+                  {property.category ? propertyCategories[property.category] : "To be confirmed"}
+                </dd>
+              </div>
+              <div>
                 <dt className="text-sm text-muted-foreground">Property type</dt>
                 <dd className="mt-1 font-medium">{property.type}</dd>
               </div>
@@ -102,7 +109,12 @@ export default function PropertyDetail({ property }: { property: Property }) {
               <MapPin className="size-4 text-accent" />
               {property.location ?? "Location to be confirmed"}
             </p>
-            {!property.location && (
+            {property.neighbourhood && (
+              <p className="mt-3 whitespace-pre-line text-sm leading-6 text-muted-foreground">
+                {property.neighbourhood}
+              </p>
+            )}
+            {!property.location && !property.neighbourhood && (
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 Request the exact location and viewing directions from our team.
               </p>
@@ -113,19 +125,17 @@ export default function PropertyDetail({ property }: { property: Property }) {
           className="border-t-2 border-accent pt-6 lg:sticky lg:top-28"
           aria-label="Property enquiry"
         >
-          <p className="text-xs font-semibold uppercase text-muted-foreground">Your next home</p>
+          <p className="text-xs font-semibold uppercase text-muted-foreground">
+            {property.category === "managed" ? "Our managed portfolio" : "Your next property"}
+          </p>
           <h2 className="mt-3 font-serif text-3xl text-primary">Let's take a closer look.</h2>
           <p className="mt-4 text-sm leading-6 text-muted-foreground">
-            Ask about availability, confirmed specifications or arrange a viewing with our team.
+            {property.category === "managed"
+              ? "Contact our team about management services for this property."
+              : "Ask about availability, confirmed specifications or arrange a viewing with our team."}
           </p>
           <Button asChild size="lg" className="mt-6 w-full">
-            <a
-              href={whatsappUrl(
-                `Hello Silverfox, I would like to enquire about ${property.name} (${property.reference}). Please share availability, pricing and viewing arrangements.`,
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a href={whatsappUrl(message)} target="_blank" rel="noopener noreferrer">
               <MessageCircle />
               Enquire on WhatsApp
             </a>

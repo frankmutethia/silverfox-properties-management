@@ -50,6 +50,12 @@ export default function SiteFooter() {
           <a href="/#management" className="hover:text-primary">
             Our services
           </a>
+          <a href="/#blogs" className="hover:text-primary">
+            Blog
+          </a>
+          <a href="/#testimonials" className="hover:text-primary">
+            Testimonials
+          </a>
           <a href="/#owners" className="hover:text-primary">
             For property owners
           </a>
