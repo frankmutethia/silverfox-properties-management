@@ -1,59 +1,64 @@
-import { z } from "zod";
+import { api, getPage, request, type Query } from "./api";
+import type {
+  ApiTestimonial,
+  PublicationStatus,
+  PublicTestimonial,
+  TestimonialInput,
+  TestimonialStatus,
+} from "./types";
 
-export const feedbackSchema = z.object({
-  name: z.string().trim().min(1).max(100),
-  feedback: z.string().trim().min(1).max(2000),
-  rating: z.number().int().min(1).max(5),
-});
-const schema = feedbackSchema.extend({
-  id: z.string().min(1),
-  status: z.enum(["pending", "draft", "published"]),
-  source: z.enum(["visitor", "admin", "legacy"]),
-  created: z.string(),
-  updated: z.string(),
-});
-export type Testimonial = z.infer<typeof schema>;
-const key = "silverfox-testimonials";
-export function readTestimonials(): Testimonial[] {
-  try {
-    const data: unknown = JSON.parse(localStorage.getItem(key) ?? "[]");
-    const records = Array.isArray(data)
-      ? data.flatMap((item) => {
-          const parsed = schema.safeParse(item);
-          return parsed.success ? [parsed.data] : [];
-        })
-      : [];
-    const legacy = feedbackSchema.safeParse(
-      JSON.parse(localStorage.getItem("silverfox-testimonial-preview") ?? "null"),
-    );
-    if (legacy.success && !records.some((item) => item.id === "legacy-preview"))
-      records.push({
-        ...legacy.data,
-        id: "legacy-preview",
-        source: "legacy",
-        status: "pending",
-        created: "",
-        updated: "",
-      });
-    return records;
-  } catch {
-    return [];
-  }
+// Limits enforced by the API.
+export const TESTIMONIAL_LIMITS = {
+  name: { min: 2, max: 100 },
+  comment: { min: 10, max: 2000 },
+} as const;
+
+/** Returns field → message problems for a testimonial, matching the API rules. */
+export function testimonialProblems({ name, comment, rating }: TestimonialInput) {
+  const problems: Record<string, string> = {};
+  const { name: n, comment: c } = TESTIMONIAL_LIMITS;
+  if (name.trim().length < n.min || name.trim().length > n.max)
+    problems["name"] = `Enter a name of ${n.min}–${n.max} characters.`;
+  if (comment.trim().length < c.min || comment.trim().length > c.max)
+    problems["comment"] = `Write between ${c.min} and ${c.max} characters.`;
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5)
+    problems["rating"] = "Select a rating from 1 to 5 stars.";
+  return problems;
 }
-export function saveTestimonial(record: Testimonial) {
-  const validated = schema.parse(record);
-  const next = [validated, ...readTestimonials().filter((item) => item.id !== validated.id)];
-  localStorage.setItem(key, JSON.stringify(next));
-  return next;
-}
-export function submitTestimonial(feedback: z.infer<typeof feedbackSchema>) {
-  const now = new Date().toISOString();
-  return saveTestimonial({
-    ...feedbackSchema.parse(feedback),
-    id: crypto.randomUUID(),
-    source: "visitor",
-    status: "pending",
-    created: now,
-    updated: now,
-  });
-}
+
+export const testimonialStatusLabels: Record<TestimonialStatus, string> = {
+  pending: "Pending review",
+  draft: "Draft",
+  published: "Published",
+};
+
+// ---------- Public ----------
+
+export const listPublishedTestimonials = (query: Query, signal?: AbortSignal) =>
+  getPage<PublicTestimonial>("/testimonials", "testimonials", query, signal);
+
+/** Submits visitor feedback for review and returns the API's thank-you message. */
+export const submitTestimonial = (input: TestimonialInput & { website: string }) =>
+  request<object>("POST", "/testimonials/submit", { body: input }).then((result) => result.message);
+
+// ---------- Staff ----------
+
+export const listAdminTestimonials = (query: Query, signal?: AbortSignal) =>
+  getPage<ApiTestimonial>("/testimonials/admin/all", "testimonials", query, signal);
+
+export const createTestimonial = (input: TestimonialInput & { status: PublicationStatus }) =>
+  api
+    .post<{ testimonial: ApiTestimonial }>("/testimonials", input)
+    .then((data) => data.testimonial);
+
+export const updateTestimonial = (id: string, input: Partial<TestimonialInput>) =>
+  api
+    .patch<{ testimonial: ApiTestimonial }>(`/testimonials/${id}`, input)
+    .then((data) => data.testimonial);
+
+export const toggleTestimonialPublish = (id: string) =>
+  api
+    .patch<{ testimonial: ApiTestimonial }>(`/testimonials/${id}/publish`)
+    .then((data) => data.testimonial);
+
+export const deleteTestimonial = (id: string) => api.del<object>(`/testimonials/${id}`);

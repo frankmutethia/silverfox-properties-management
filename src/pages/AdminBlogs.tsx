@@ -1,49 +1,59 @@
 import { useState } from "react";
-import { Plus, ArrowRight } from "lucide-react";
-import { type Draft, type BlogImage, plainBlogText, readBlogImage, saveDrafts } from "@/lib/blogs";
-import { cleanRichHtml } from "@/lib/local-services";
-import ServiceEditor from "@/components/ServiceEditor";
+import { ArrowUpRight, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { deletePost, listAdminPosts, togglePostPublish } from "@/lib/blog";
+import type { ApiPost, PublicationStatus } from "@/lib/types";
+import { reportError, useDebounced, useQuery } from "@/lib/use-query";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import BlogForm from "@/components/BlogForm";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import Pager from "@/components/admin/Pager";
+import StatusBadge, { StatusFilter } from "@/components/admin/StatusBadge";
+import { CardSkeletons, LoadError } from "@/components/QueryState";
 
-export default function AdminBlogs({
-  drafts,
-  onSave,
-}: {
-  drafts: Draft[];
-  onSave: (drafts: Draft[]) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [id, setId] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [initialBody, setInitialBody] = useState("");
-  const [body, setBody] = useState("");
-  const [cover, setCover] = useState<BlogImage | null>(null);
-  const [imageBusy, setImageBusy] = useState(false);
-  const [editorBusy, setEditorBusy] = useState(false);
-  const [notice, setNotice] = useState("");
-  const busy = imageBusy || editorBusy;
-  function edit(draft?: Draft) {
-    setId(draft?.id ?? null);
-    setTitle(draft?.title ?? "");
-    setBody(draft?.body ?? "");
-    setInitialBody(draft?.body ?? "");
-    setCover(draft?.cover ?? null);
-    setNotice("");
-    setOpen(true);
-  }
-  async function uploadCover(file?: File) {
-    if (!file) return;
-    setImageBusy(true);
-    setNotice("");
+type StatusOption = "all" | PublicationStatus;
+
+export default function AdminBlogs() {
+  const [status, setStatus] = useState<StatusOption>("all");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const query = useDebounced(search.trim());
+  const result = useQuery(
+    (signal) =>
+      listAdminPosts(
+        { status: status === "all" ? undefined : status, search: query, page, limit: 12 },
+        signal,
+      ),
+    [status, query, page],
+  );
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [deleting, setDeleting] = useState<ApiPost | null>(null);
+  const [toggling, setToggling] = useState<string | null>(null);
+  const posts = result.data?.items ?? [];
+
+  async function toggle(post: ApiPost) {
+    setToggling(post._id);
     try {
-      setCover({ src: await readBlogImage(file), alt: "" });
+      const saved = await togglePostPublish(post._id);
+      toast.success(
+        saved.status === "published"
+          ? `“${saved.title}” is now published.`
+          : `“${saved.title}” moved to drafts and hidden from the website.`,
+      );
+      result.reload();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Unable to read image.");
+      reportError(error);
     } finally {
-      setImageBusy(false);
+      setToggling(null);
     }
   }
+
+  function edit(id: string | null) {
+    setEditingId(id);
+    setFormOpen(true);
+  }
+
   return (
     <>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -51,192 +61,143 @@ export default function AdminBlogs({
           <p className="admin-eyebrow">The Silverfox journal</p>
           <h1 className="admin-title">Blogs</h1>
         </div>
-        <Button onClick={() => edit()}>
+        <Button onClick={() => edit(null)}>
           <Plus />
-          Create blog
+          Create article
         </Button>
       </div>
       <p className="mb-6 text-sm text-muted-foreground">
-        Write stories for owners and residents. Drafts are saved in this browser; publishing is not
-        connected yet.
+        Write stories for owners and residents. Drafts stay private until you publish them.
       </p>
-      {!open && (
-        <p role="status" className="mb-4 text-sm">
-          {notice}
-        </p>
-      )}
-      {drafts.length ? (
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {drafts.map((draft) => (
-            <article key={draft.id} className="admin-panel overflow-hidden">
-              {draft.cover && (
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <StatusFilter
+          label="Filter by status"
+          value={status}
+          onChange={(value) => {
+            setStatus(value);
+            setPage(1);
+          }}
+          options={[
+            { value: "all", label: "All" },
+            { value: "published", label: "Published" },
+            { value: "draft", label: "Drafts" },
+          ]}
+        />
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-3.5 size-4 text-muted-foreground" />
+          <input
+            type="search"
+            aria-label="Search articles"
+            placeholder="Search titles and summaries…"
+            className="admin-input pl-10"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
+          />
+        </div>
+      </div>
+      {!result.data && result.loading ? (
+        <CardSkeletons />
+      ) : !result.data && result.error ? (
+        <LoadError error={result.error} onRetry={result.reload} className="admin-panel" />
+      ) : posts.length ? (
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3" aria-busy={result.loading}>
+          {posts.map((post) => (
+            <article key={post._id} className="admin-panel flex flex-col overflow-hidden">
+              {post.coverImage && (
                 <img
-                  src={draft.cover.src}
-                  alt={draft.cover.alt}
+                  src={post.coverImage.url}
+                  alt={post.coverImage.alt}
                   className="aspect-video w-full object-cover"
                 />
               )}
-              <div className="p-6">
-                <span className="rounded-full bg-accent/10 px-3 py-1 text-xs">Local draft</span>
-                <h2 className="mt-4 break-words text-xl font-semibold">{draft.title}</h2>
-                <p className="mt-3 line-clamp-3 break-words text-sm leading-6 text-muted-foreground">
-                  {plainBlogText(draft.body)}
+              <div className="flex flex-1 flex-col p-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusBadge status={post.status} />
+                  {post.category && (
+                    <span className="text-xs text-muted-foreground">{post.category}</span>
+                  )}
+                </div>
+                <h2 className="mt-4 break-words text-xl font-semibold">{post.title}</h2>
+                <p className="mt-3 line-clamp-3 flex-1 break-words text-sm leading-6 text-muted-foreground">
+                  {post.excerpt}
                 </p>
                 <p className="mt-4 text-xs text-muted-foreground">
-                  Saved {new Date(draft.updated).toLocaleDateString("en-GB")}
+                  Updated {new Date(post.updatedAt).toLocaleDateString("en-GB")}
+                  {post.author ? ` · ${post.author.name}` : ""}
                 </p>
-                <Button variant="outline" className="mt-5" onClick={() => edit(draft)}>
-                  Edit draft <ArrowRight />
-                </Button>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => edit(post._id)}>
+                    <Pencil />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={toggling === post._id}
+                    onClick={() => void toggle(post)}
+                  >
+                    {post.status === "published" ? "Unpublish" : "Publish"}
+                  </Button>
+                  {post.status === "published" && (
+                    <Button variant="outline" size="icon" asChild>
+                      <a
+                        href={`/blogs/${post.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`View “${post.title}” on the website`}
+                      >
+                        <ArrowUpRight />
+                      </a>
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="text-destructive"
+                    aria-label={`Delete “${post.title}”`}
+                    onClick={() => setDeleting(post)}
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
               </div>
             </article>
           ))}
         </div>
       ) : (
         <section className="admin-panel p-12 text-center">
-          <h2 className="text-xl font-semibold">Your next story starts here.</h2>
+          <h2 className="text-xl font-semibold">
+            {status === "all" && !query ? "Your next story starts here." : "No matching articles."}
+          </h2>
           <p className="my-4 text-sm text-muted-foreground">
             Share property insights, practical advice and news.
           </p>
-          <Button onClick={() => edit()}>Create your first blog</Button>
+          <Button onClick={() => edit(null)}>Create an article</Button>
         </section>
       )}
-      <Dialog
-        open={open}
-        onOpenChange={(next) => {
-          if (!busy) setOpen(next);
+      <Pager pagination={result.data?.pagination} onPage={setPage} disabled={result.loading} />
+      <BlogForm
+        postId={editingId}
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        onSaved={() => result.reload()}
+      />
+      <ConfirmDialog
+        open={deleting !== null}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title={`Delete “${deleting?.title ?? "article"}”?`}
+        description="This permanently removes the article and its cover image. To hide it temporarily, unpublish it instead."
+        onConfirm={async () => {
+          if (!deleting) return;
+          await deletePost(deleting._id);
+          toast.success(`“${deleting.title}” deleted.`);
+          if (posts.length === 1 && page > 1) setPage(page - 1);
+          else result.reload();
         }}
-      >
-        <DialogContent className="max-h-[90dvh] max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-4xl">
-          <DialogTitle>{id ? "Edit blog draft" : "Create blog"}</DialogTitle>
-          <DialogDescription>
-            Add a title, optional cover image and full article. Fields marked * are required.
-          </DialogDescription>
-          <form
-            className="space-y-5"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (busy) return;
-              const html = cleanRichHtml(body, true);
-              const doc = new DOMParser().parseFromString(html, "text/html");
-              const text = doc.body.textContent?.trim() ?? "";
-              const images = Array.from(doc.querySelectorAll("img"));
-              if (
-                !title.trim() ||
-                !text ||
-                text.length > 50000 ||
-                images.length > 5 ||
-                images.some((img) => !img.alt.trim()) ||
-                (cover && !cover.alt.trim())
-              ) {
-                setNotice(
-                  "Add a title and article text (up to 50,000 characters). Provide alt text for all images and use up to five article images.",
-                );
-                return;
-              }
-              const draft: Draft = {
-                id: id ?? crypto.randomUUID(),
-                title: title.trim(),
-                body: html,
-                cover,
-                format: "html",
-                updated: new Date().toISOString(),
-              };
-              const next = [draft, ...drafts.filter((item) => item.id !== draft.id)];
-              try {
-                saveDrafts(next);
-                onSave(next);
-                setOpen(false);
-                setNotice("Blog draft saved in this browser.");
-              } catch {
-                setNotice(
-                  "Unable to save: browser storage is full or unavailable. Remove or reduce images and retry. Your work is still in this form.",
-                );
-              }
-            }}
-          >
-            <label className="block text-sm font-medium">
-              Blog title *
-              <input
-                required
-                maxLength={160}
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                className="admin-input mt-2"
-              />
-            </label>
-            <div className="rounded-lg border border-dashed border-border p-4">
-              <label className="block text-sm font-medium">
-                Cover image (optional)
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  disabled={busy}
-                  className="admin-input mt-2"
-                  onChange={(event) => {
-                    void uploadCover(event.target.files?.[0]);
-                    event.target.value = "";
-                  }}
-                />
-              </label>
-              <p className="mt-2 text-xs text-muted-foreground">
-                JPG, PNG or WebP, up to 600 KB. Add more images within the article below.
-              </p>
-              {cover && (
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <img
-                    src={cover.src}
-                    alt={cover.alt || "Cover preview"}
-                    className="h-24 w-32 rounded object-cover"
-                  />
-                  <label className="min-w-0 flex-1 text-sm">
-                    Cover image alt text *
-                    <input
-                      required
-                      maxLength={150}
-                      value={cover.alt}
-                      onChange={(event) => setCover({ ...cover, alt: event.target.value })}
-                      className="admin-input mt-2"
-                    />
-                  </label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    disabled={busy}
-                    onClick={() => setCover(null)}
-                  >
-                    Remove cover
-                  </Button>
-                </div>
-              )}
-            </div>
-            <ServiceEditor
-              initialHtml={initialBody}
-              onChange={setBody}
-              allowImages
-              onBusy={setEditorBusy}
-            />
-            {notice && (
-              <p role="alert" className="text-sm text-destructive">
-                {notice}
-              </p>
-            )}
-            <div className="flex justify-end gap-3 border-t border-border pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={busy}
-                onClick={() => setOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={busy}>
-                {busy ? "Reading images…" : "Save draft"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      />
     </>
   );
 }

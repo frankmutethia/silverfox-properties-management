@@ -1,10 +1,16 @@
 import { useState } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
-import { properties, propertyCategories } from "@/data/properties";
+import { Building2, Search, SlidersHorizontal } from "lucide-react";
+import { listAllPublishedProperties, propertyCategories } from "@/lib/properties";
+import { useQuery } from "@/lib/use-query";
 import { Button } from "@/components/ui/button";
+import { CardSkeletons, LoadError } from "./QueryState";
 import PropertyCard from "./PropertyCard";
 
 export default function PropertyListings() {
+  // One request for the whole published collection; filtering stays in the browser so typing
+  // in the search box doesn't spend the API's per-visitor rate limit.
+  const result = useQuery((signal) => listAllPublishedProperties(signal), []);
+  const properties = result.data ?? [];
   const [query, setQuery] = useState("");
   const [type, setType] = useState("");
   const [category, setCategory] = useState("");
@@ -111,7 +117,11 @@ export default function PropertyListings() {
         </div>
         <div className="flex min-h-16 items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground" role="status">
-            {filtered.length} {filtered.length === 1 ? "property" : "properties"}
+            {result.data
+              ? `${filtered.length} ${filtered.length === 1 ? "property" : "properties"}`
+              : result.loading
+                ? "Loading properties…"
+                : ""}
           </p>
           {hasFilters && (
             <Button variant="ghost" size="sm" onClick={reset}>
@@ -119,10 +129,22 @@ export default function PropertyListings() {
             </Button>
           )}
         </div>
-        {filtered.length ? (
+        {!result.data && result.loading ? (
+          <CardSkeletons />
+        ) : !result.data && result.error ? (
+          <LoadError error={result.error} onRetry={result.reload} />
+        ) : !properties.length ? (
+          <div className="py-16 text-center">
+            <Building2 className="mx-auto mb-4 size-6 text-muted-foreground" />
+            <h3 className="text-xl font-semibold">New listings are on the way</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              No properties are listed right now. Contact our team about upcoming homes.
+            </p>
+          </div>
+        ) : filtered.length ? (
           <div className="grid items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
             {filtered.map((property) => (
-              <PropertyCard key={property.slug} property={property} />
+              <PropertyCard key={property._id} property={property} />
             ))}
           </div>
         ) : (

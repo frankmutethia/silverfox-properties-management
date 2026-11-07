@@ -1,12 +1,13 @@
 import { useEffect } from "react";
 import { ArrowLeft, Check, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { whatsappUrl } from "@/lib/contact";
-import { type Property, propertyPrice, propertyCategories } from "@/data/properties";
+import { propertyCategories, propertyPrice } from "@/lib/properties";
+import type { ApiProperty } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import PropertyFacts from "@/components/PropertyFacts";
 import PropertyGallery from "@/components/PropertyGallery";
 
-export default function PropertyDetail({ property }: { property: Property }) {
+export default function PropertyDetail({ property }: { property: ApiProperty }) {
   useEffect(() => {
     const previousTitle = document.title;
     document.title = `${property.name} | Silverfox Property Management`;

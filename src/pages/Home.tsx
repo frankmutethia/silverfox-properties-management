@@ -1,4 +1,3 @@
-import { serviceGroups } from "@/data/services";
 import {
   ArrowRight,
   Building2,
@@ -8,7 +7,6 @@ import {
   Phone,
   ShieldCheck,
   Wrench,
-  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import kitchen from "@/assets/aaron-huber-G7sE2S4Lab4-unsplash.jpg";
@@ -20,6 +18,7 @@ import { whatsappUrl } from "@/lib/contact";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import BlogSection from "@/components/BlogSection";
 import Testimonials from "@/components/Testimonials";
+import ServicesSection from "@/components/ServicesSection";
 
 export default function Home() {
   return (
@@ -103,30 +102,7 @@ export default function Home() {
 
       <PropertyListings />
 
-      <section id="management" className="bg-card py-16 lg:py-20">
-        <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <div className="grid gap-8 border-b border-border pb-10 lg:grid-cols-[1fr_.9fr] lg:items-end">
-            <div>
-              <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-accent">
-                Our services
-              </p>
-              <h2 className="max-w-2xl text-4xl font-bold leading-tight tracking-[-0.035em] text-primary sm:text-5xl">
-                Guidance through every stage of property ownership.
-              </h2>
-            </div>
-            <p className="border-l-2 border-accent pl-6 text-base font-medium leading-7 text-foreground/75">
-              Silverfox supports buyers, sellers and property owners with practical coordination,
-              careful documentation and dependable day-to-day management.
-            </p>
-          </div>
-          <div className="grid gap-6 pt-10 lg:grid-cols-2">
-            {serviceGroups.map((group) => (
-              <ServiceGroup key={group.number} {...group} />
-            ))}
-          </div>
-        </div>
-      </section>
-
+      <ServicesSection />
       <BlogSection />
       <Testimonials />
 
@@ -276,53 +252,5 @@ export default function Home() {
       </section>
       <FloatingWhatsApp />
     </main>
-  );
-}
-
-interface ServiceItem {
-  icon: LucideIcon;
-  title: string;
-  copy: string;
-}
-
-function ServiceGroup({
-  number,
-  title,
-  description,
-  services,
-}: {
-  number: string;
-  title: string;
-  description: string;
-  services: ServiceItem[];
-}) {
-  return (
-    <article className="overflow-hidden rounded-xl border border-border bg-background shadow-sm">
-      <div className="border-b border-border bg-primary p-6 text-primary-foreground sm:p-8">
-        <div className="mb-5 flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-[0.18em] text-accent">
-            Service category
-          </span>
-          <span className="text-sm font-bold text-primary-foreground/60">{number}</span>
-        </div>
-        <h3 className="text-2xl font-bold tracking-[-0.025em] sm:text-3xl">{title}</h3>
-        <p className="mt-3 max-w-xl text-sm font-medium leading-6 text-primary-foreground/80">
-          {description}
-        </p>
-      </div>
-      <div className="divide-y divide-border px-6 sm:px-8">
-        {services.map(({ icon: Icon, title: serviceTitle, copy }) => (
-          <div key={serviceTitle} className="grid gap-4 py-6 sm:grid-cols-[44px_1fr]">
-            <span className="flex size-11 items-center justify-center rounded-lg bg-accent/10 text-accent">
-              <Icon className="size-5" aria-hidden="true" />
-            </span>
-            <div>
-              <h4 className="text-base font-bold text-primary">{serviceTitle}</h4>
-              <p className="mt-2 text-sm font-medium leading-6 text-foreground/70">{copy}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </article>
   );
 }

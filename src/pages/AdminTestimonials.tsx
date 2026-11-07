@@ -1,78 +1,76 @@
 import { useState, type FormEvent } from "react";
-import { Plus, Star, MessageSquareQuote, ArrowUpRight } from "lucide-react";
+import { Plus, Star, MessageSquareQuote, ArrowUpRight, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import {
-  feedbackSchema,
-  readTestimonials,
-  saveTestimonial,
-  type Testimonial,
+  createTestimonial,
+  deleteTestimonial,
+  listAdminTestimonials,
+  testimonialProblems,
+  TESTIMONIAL_LIMITS,
+  toggleTestimonialPublish,
+  updateTestimonial,
 } from "@/lib/testimonials";
+import { getDashboard } from "@/lib/auth";
+import type { ApiTestimonial, PublicationStatus, TestimonialStatus } from "@/lib/types";
+import { useFieldErrors } from "@/lib/form-errors";
+import { reportError, useQuery } from "@/lib/use-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import FieldError from "@/components/admin/FieldError";
+import Pager from "@/components/admin/Pager";
+import StatusBadge, { StatusFilter } from "@/components/admin/StatusBadge";
+import { LineSkeletons, LoadError } from "@/components/QueryState";
 
-const labels = { pending: "Pending review", draft: "Draft", published: "Published" };
+type Filter = "all" | TestimonialStatus;
+
 export default function AdminTestimonials() {
-  const [records, setRecords] = useState(readTestimonials);
-  const [filter, setFilter] = useState("all");
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Testimonial | null>(null);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  function edit(item: Testimonial | null) {
-    setEditing(item);
-    setError("");
-    setOpen(true);
+  const [filter, setFilter] = useState<Filter>("pending");
+  const [page, setPage] = useState(1);
+  const result = useQuery(
+    (signal) =>
+      listAdminTestimonials(
+        { status: filter === "all" ? undefined : filter, page, limit: 20 },
+        signal,
+      ),
+    [filter, page],
+  );
+  // Status counts for the filter buttons.
+  const counts = useQuery((signal) => getDashboard(signal).then((d) => d.testimonials), []);
+  const [editing, setEditing] = useState<ApiTestimonial | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [deleting, setDeleting] = useState<ApiTestimonial | null>(null);
+  const [working, setWorking] = useState<string | null>(null);
+  const items = result.data?.items ?? [];
+
+  function refresh() {
+    result.reload();
+    counts.reload();
   }
-  function changeStatus(item: Testimonial, status: Testimonial["status"]) {
+
+  async function toggle(item: ApiTestimonial) {
+    setWorking(item._id);
     try {
-      setRecords(saveTestimonial({ ...item, status, updated: new Date().toISOString() }));
-      setNotice(
-        status === "published"
-          ? "Testimonial published on this browser’s landing page."
-          : "Testimonial moved to drafts and hidden from the landing page.",
+      const saved = await toggleTestimonialPublish(item._id);
+      toast.success(
+        saved.status === "published"
+          ? `${saved.name}’s testimonial is now on the website.`
+          : `${saved.name}’s testimonial moved to drafts and hidden from the website.`,
       );
-    } catch {
-      setNotice("Unable to save the change. Browser storage may be unavailable or full.");
+      refresh();
+    } catch (error) {
+      reportError(error);
+    } finally {
+      setWorking(null);
     }
   }
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const parsed = feedbackSchema.safeParse({
-      name: data.get("name"),
-      feedback: data.get("feedback"),
-      rating: Number(data.get("rating")),
-    });
-    if (!parsed.success) {
-      setError("Enter a client name, feedback and a rating between 1 and 5.");
-      return;
-    }
-    const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
-    const status = submitter?.value === "published" ? "published" : "draft";
-    const now = new Date().toISOString();
-    try {
-      setRecords(
-        saveTestimonial({
-          ...parsed.data,
-          id: editing?.id ?? crypto.randomUUID(),
-          source: editing?.source ?? "admin",
-          status,
-          created: editing?.created ?? now,
-          updated: now,
-        }),
-      );
-      setOpen(false);
-      setNotice(
-        status === "published"
-          ? "Testimonial published on this browser’s landing page."
-          : "Testimonial saved as a draft.",
-      );
-    } catch {
-      setError(
-        "Unable to save. Your work is still here; browser storage may be full or unavailable.",
-      );
-    }
-  }
-  const visible = records.filter((item) => filter === "all" || item.status === filter);
+
+  const total = counts.data
+    ? counts.data.pending + counts.data.draft + counts.data.published
+    : undefined;
+  const label = (text: string, count: number | undefined) =>
+    count === undefined ? text : `${text} (${count})`;
+
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -86,46 +84,53 @@ export default function AdminTestimonials() {
               View on website <ArrowUpRight />
             </a>
           </Button>
-          <Button onClick={() => edit(null)}>
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setFormOpen(true);
+            }}
+          >
             <Plus />
             Create testimonial
           </Button>
         </div>
       </div>
       <p className="mb-7 mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-        Review submitted feedback before publishing. Submissions and publication are stored in this
-        browser only; they are not shared across devices or sent to a server.
+        Visitor feedback arrives as pending review. Publish it to show it on the website, or delete
+        it to reject it.
       </p>
-      <div className="mb-6 flex flex-wrap gap-2" aria-label="Filter testimonials">
-        {["all", "pending", "draft", "published"].map((status) => (
-          <Button
-            key={status}
-            variant={filter === status ? "default" : "outline"}
-            aria-pressed={filter === status}
-            onClick={() => setFilter(status)}
-          >
-            {status === "all" ? "All" : labels[status as keyof typeof labels]} (
-            {records.filter((item) => status === "all" || item.status === status).length})
-          </Button>
-        ))}
+      <div className="mb-6">
+        <StatusFilter
+          label="Filter testimonials"
+          value={filter}
+          onChange={(value) => {
+            setFilter(value);
+            setPage(1);
+          }}
+          options={[
+            { value: "pending", label: label("Pending review", counts.data?.pending) },
+            { value: "published", label: label("Published", counts.data?.published) },
+            { value: "draft", label: label("Drafts", counts.data?.draft) },
+            { value: "all", label: label("All", total) },
+          ]}
+        />
       </div>
-      <p role="status" className="mb-4 text-sm">
-        {notice}
-      </p>
-      {visible.length ? (
+      {!result.data && result.loading ? (
         <div className="grid gap-5 md:grid-cols-2">
-          {visible.map((item) => (
-            <article key={item.id} className="admin-panel flex flex-col p-6">
+          <LineSkeletons lines={6} className="admin-panel p-6" />
+          <LineSkeletons lines={6} className="admin-panel p-6" />
+        </div>
+      ) : !result.data && result.error ? (
+        <LoadError error={result.error} onRetry={result.reload} className="admin-panel" />
+      ) : items.length ? (
+        <div className="grid gap-5 md:grid-cols-2" aria-busy={result.loading}>
+          {items.map((item) => (
+            <article key={item._id} className="admin-panel flex flex-col p-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-primary">
-                  {labels[item.status]}
-                </span>
+                <StatusBadge status={item.status} />
                 <span className="text-xs text-muted-foreground">
-                  {item.source === "admin"
-                    ? "Created by admin"
-                    : item.source === "legacy"
-                      ? "Previous visitor preview"
-                      : "Visitor submission"}
+                  {item.source === "admin" ? "Added by staff" : "Visitor submission"} ·{" "}
+                  {new Date(item.createdAt).toLocaleDateString("en-GB")}
                 </span>
               </div>
               <h2 className="mt-5 break-words text-lg font-semibold">{item.name}</h2>
@@ -139,24 +144,37 @@ export default function AdminTestimonials() {
                 ))}
               </div>
               <blockquote className="flex-1 whitespace-pre-line break-words text-sm leading-7">
-                {item.feedback}
+                {item.comment}
               </blockquote>
-              <div className="mt-6 flex flex-wrap gap-3 border-t border-border pt-4">
-                <Button variant="outline" onClick={() => edit(item)}>
-                  Review / edit
+              <div className="mt-6 flex flex-wrap gap-2 border-t border-border pt-4">
+                <Button
+                  size="sm"
+                  variant={item.status === "published" ? "outline" : "default"}
+                  disabled={working === item._id}
+                  onClick={() => void toggle(item)}
+                >
+                  {item.status === "published" ? "Unpublish" : "Publish"}
                 </Button>
-                {item.status !== "published" ? (
-                  <Button onClick={() => changeStatus(item, "published")}>Publish</Button>
-                ) : (
-                  <Button variant="outline" onClick={() => changeStatus(item, "draft")}>
-                    Unpublish
-                  </Button>
-                )}
-                {item.status === "pending" && (
-                  <Button variant="ghost" onClick={() => changeStatus(item, "draft")}>
-                    Keep as draft
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setEditing(item);
+                    setFormOpen(true);
+                  }}
+                >
+                  <Pencil />
+                  {item.status === "pending" ? "Review / edit" : "Edit"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive"
+                  onClick={() => setDeleting(item)}
+                >
+                  <Trash2 />
+                  {item.status === "pending" ? "Reject" : "Delete"}
+                </Button>
               </div>
             </article>
           ))}
@@ -165,83 +183,177 @@ export default function AdminTestimonials() {
         <div className="admin-panel py-16 text-center">
           <MessageSquareQuote className="mx-auto mb-4 size-9 text-accent" />
           <h2 className="text-xl font-semibold">
-            No{" "}
-            {filter === "all"
-              ? "testimonials"
-              : labels[filter as keyof typeof labels].toLowerCase() + " testimonials"}{" "}
-            yet
+            {filter === "pending" ? "Nothing waiting for review" : "No testimonials here yet"}
           </h2>
           <p className="mt-3 text-sm text-muted-foreground">
-            New visitor submissions appear here for review.
+            New visitor submissions appear under Pending review.
           </p>
         </div>
       )}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90dvh] max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-xl">
-          <DialogTitle>{editing ? "Review testimonial" : "Create testimonial"}</DialogTitle>
-          <DialogDescription>
-            Enter genuine client feedback. Save it as a draft or publish it to the landing page in
-            this browser.
-          </DialogDescription>
-          <form onSubmit={submit} className="space-y-5">
-            <label className="block text-sm font-medium">
-              Client name *
-              <input
-                name="name"
-                required
-                maxLength={100}
-                defaultValue={editing?.name ?? ""}
-                className="admin-input mt-2"
-              />
-            </label>
-            <label className="block text-sm font-medium">
-              Star rating *
-              <select
-                name="rating"
-                required
-                defaultValue={editing?.rating ?? ""}
-                className="admin-input mt-2"
-              >
-                <option value="" disabled>
-                  Select a rating
-                </option>
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <option key={value} value={value}>
-                    {value} {value === 1 ? "star" : "stars"}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block text-sm font-medium">
-              Client feedback *
-              <textarea
-                name="feedback"
-                required
-                maxLength={2000}
-                rows={6}
-                defaultValue={editing?.feedback ?? ""}
-                className="admin-input mt-2"
-              />
-            </label>
-            {error && (
-              <p role="alert" className="text-sm text-destructive">
-                {error}
-              </p>
-            )}
-            <div className="flex flex-wrap justify-end gap-3 border-t border-border pt-4">
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" value="draft" variant="outline">
-                Save draft
-              </Button>
-              <Button type="submit" value="published">
-                Publish testimonial
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <Pager pagination={result.data?.pagination} onPage={setPage} disabled={result.loading} />
+      <TestimonialForm
+        testimonial={editing}
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        onSaved={refresh}
+      />
+      <ConfirmDialog
+        open={deleting !== null}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title={
+          deleting?.status === "pending"
+            ? `Reject ${deleting.name}’s testimonial?`
+            : `Delete ${deleting?.name ?? "this"} testimonial?`
+        }
+        description="The testimonial is permanently deleted and cannot be restored."
+        confirmLabel={deleting?.status === "pending" ? "Reject" : "Delete"}
+        onConfirm={async () => {
+          if (!deleting) return;
+          await deleteTestimonial(deleting._id);
+          toast.success("Testimonial deleted.");
+          if (items.length === 1 && page > 1) setPage(page - 1);
+          else refresh();
+        }}
+      />
     </>
+  );
+}
+
+function TestimonialForm({
+  testimonial,
+  open,
+  onOpenChange,
+  onSaved,
+}: {
+  testimonial: ApiTestimonial | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSaved: () => void;
+}) {
+  const form = useFieldErrors(["name", "comment", "rating"]);
+  const [busy, setBusy] = useState(false);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const input = {
+      name: String(data.get("name") ?? "").trim(),
+      comment: String(data.get("comment") ?? "").trim(),
+      rating: Number(data.get("rating")),
+    };
+    const problems = testimonialProblems(input);
+    form.setErrors(problems);
+    if (Object.keys(problems).length) return;
+    const status = ((event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null)
+      ?.value as PublicationStatus | undefined;
+    setBusy(true);
+    try {
+      if (testimonial) await updateTestimonial(testimonial._id, input);
+      else await createTestimonial({ ...input, status: status ?? "draft" });
+      toast.success(
+        testimonial
+          ? "Testimonial updated."
+          : status === "published"
+            ? "Testimonial published on the website."
+            : "Testimonial saved as a draft.",
+      );
+      onSaved();
+      onOpenChange(false);
+    } catch (error) {
+      form.handle(error);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (busy) return;
+        form.clear();
+        onOpenChange(next);
+      }}
+    >
+      <DialogContent className="max-h-[90dvh] max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-xl">
+        <DialogTitle>{testimonial ? "Review testimonial" : "Create testimonial"}</DialogTitle>
+        <DialogDescription>
+          {testimonial
+            ? "Correct typing errors if needed. Use Publish on the card to show it on the website."
+            : "Enter genuine client feedback. Save it as a draft or publish it straight away."}
+        </DialogDescription>
+        <form key={testimonial?._id ?? "new"} onSubmit={submit} className="space-y-5" noValidate>
+          <label className="block text-sm font-medium">
+            Client name *
+            <input
+              name="name"
+              required
+              minLength={TESTIMONIAL_LIMITS.name.min}
+              maxLength={TESTIMONIAL_LIMITS.name.max}
+              defaultValue={testimonial?.name ?? ""}
+              className="admin-input mt-2"
+              {...form.describe("name")}
+            />
+            <FieldError form={form} name="name" />
+          </label>
+          <label className="block text-sm font-medium">
+            Star rating *
+            <select
+              name="rating"
+              required
+              defaultValue={testimonial?.rating ?? ""}
+              className="admin-input mt-2"
+              {...form.describe("rating")}
+            >
+              <option value="" disabled>
+                Select a rating
+              </option>
+              {[1, 2, 3, 4, 5].map((value) => (
+                <option key={value} value={value}>
+                  {value} {value === 1 ? "star" : "stars"}
+                </option>
+              ))}
+            </select>
+            <FieldError form={form} name="rating" />
+          </label>
+          <label className="block text-sm font-medium">
+            Client feedback *
+            <textarea
+              name="comment"
+              required
+              minLength={TESTIMONIAL_LIMITS.comment.min}
+              maxLength={TESTIMONIAL_LIMITS.comment.max}
+              rows={6}
+              defaultValue={testimonial?.comment ?? ""}
+              className="admin-input mt-2"
+              {...form.describe("comment")}
+            />
+            <FieldError form={form} name="comment" />
+          </label>
+          <div className="flex flex-wrap justify-end gap-3 border-t border-border pt-4">
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            {testimonial ? (
+              <Button type="submit" disabled={busy}>
+                {busy ? "Saving…" : "Save changes"}
+              </Button>
+            ) : (
+              <>
+                <Button type="submit" value="draft" variant="outline" disabled={busy}>
+                  Save draft
+                </Button>
+                <Button type="submit" value="published" disabled={busy}>
+                  Publish testimonial
+                </Button>
+              </>
+            )}
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

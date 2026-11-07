@@ -1,40 +1,60 @@
-import { useEffect, useRef, useState } from "react";
-import { cleanRichHtml } from "@/lib/local-services";
-import { readBlogImage } from "@/lib/blogs";
+import { useEffect, useId, useRef, useState } from "react";
 import { Bold, Italic, Underline, ListOrdered, List, Undo2, Redo2 } from "lucide-react";
+import { toast } from "sonner";
+import { cleanRichHtml, richTextClass } from "@/lib/rich-text";
+import { imageFileProblem, upload, UPLOAD_TYPES, type UploadFolder } from "@/lib/api";
+import { ARTICLE_MAX_IMAGES } from "@/lib/blog";
+import { reportError } from "@/lib/use-query";
 import { Button } from "@/components/ui/button";
 
-export const serviceTextClass =
-  "break-words text-sm leading-7 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6 [&_h2]:text-2xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_p]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-accent [&_blockquote]:pl-4";
-
+/**
+ * contentEditable editor limited to the API's rich-text allowlist. With `imageFolder`, it
+ * also accepts up to five inline images, uploaded to /media and inserted by https URL.
+ */
 export default function ServiceEditor({
+  label,
   onChange,
   initialHtml = "",
-  allowImages = false,
+  imageFolder,
   onBusy,
+  maxText,
+  error,
+  errorId,
 }: {
+  label: string;
   onChange: (html: string) => void;
   initialHtml?: string;
-  allowImages?: boolean;
+  imageFolder?: UploadFolder;
   onBusy?: (busy: boolean) => void;
+  maxText: number;
+  error?: string | undefined;
+  errorId?: string;
 }) {
+  const allowImages = imageFolder !== undefined;
   const editor = useRef<HTMLDivElement>(null);
   const selection = useRef<Range | null>(null);
   const [active, setActive] = useState<Record<string, boolean>>({});
   const [images, setImages] = useState<{ src: string; alt: string }[]>([]);
-  const [imageError, setImageError] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
+  const ids = useId();
+  const labelId = `${ids}-label`;
+  const helpId = `${ids}-help`;
+  const busy = uploadStatus !== "";
+
   useEffect(() => {
-    if (editor.current) {
-      editor.current.innerHTML = cleanRichHtml(initialHtml, allowImages);
-      setImages(
-        Array.from(editor.current.querySelectorAll("img"), (img) => ({
-          src: img.src,
-          alt: img.alt,
-        })),
-      );
-    }
+    if (!editor.current) return;
+    editor.current.innerHTML = cleanRichHtml(initialHtml, allowImages);
+    onChange(editor.current.innerHTML);
+    setImages(
+      Array.from(editor.current.querySelectorAll("img"), (img) => ({
+        src: img.src,
+        alt: img.alt,
+      })),
+    );
+    // Only reset when the starting content changes, not when the parent re-renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialHtml, allowImages]);
+
   function sync() {
     onChange(editor.current?.innerHTML ?? "");
     setImages(
@@ -44,28 +64,43 @@ export default function ServiceEditor({
       })),
     );
   }
+
+  const imageCount = () => editor.current?.querySelectorAll("img").length ?? 0;
+
   async function insertImages(files: File[]) {
-    if (!files.length || busy) return;
-    if ((editor.current?.querySelectorAll("img").length ?? 0) + files.length > 5) {
-      setImageError("Use up to five images inside the article.");
+    if (!files.length || busy || !imageFolder) return;
+    if (imageCount() + files.length > ARTICLE_MAX_IMAGES) {
+      toast.error(`Use up to ${ARTICLE_MAX_IMAGES} images inside the article.`);
       return;
     }
-    setImageError("");
-    setBusy(true);
+    const problem = files.map(imageFileProblem).find(Boolean);
+    if (problem) {
+      toast.error(problem);
+      return;
+    }
     onBusy?.(true);
+    const urls: string[] = [];
     try {
-      const sources = await Promise.all(files.map(readBlogImage));
-      command(
-        "insertHTML",
-        sources.map((src) => `<p><img src="${src}" alt=""></p><p><br></p>`).join(""),
-      );
-    } catch (error) {
-      setImageError(error instanceof Error ? error.message : "Unable to insert image.");
+      for (const [index, file] of files.entries()) {
+        const label = files.length > 1 ? `image ${index + 1} of ${files.length}` : "image";
+        setUploadStatus(`Uploading ${label}… 0%`);
+        const image = await upload(file, imageFolder, (percent) =>
+          setUploadStatus(`Uploading ${label}… ${percent}%`),
+        );
+        urls.push(image.url);
+      }
+    } catch (uploadError) {
+      reportError(uploadError);
     } finally {
-      setBusy(false);
+      if (urls.length) {
+        const html = urls.map((url) => `<p><img src="${url}" alt=""></p><p><br></p>`).join("");
+        command("insertHTML", html);
+      }
+      setUploadStatus("");
       onBusy?.(false);
     }
   }
+
   function remember() {
     const current = window.getSelection();
     if (
@@ -77,12 +112,13 @@ export default function ServiceEditor({
       setActive(
         Object.fromEntries(
           ["bold", "italic", "underline", "insertOrderedList", "insertUnorderedList"].map(
-            (command) => [command, document.queryCommandState(command)],
+            (name) => [name, document.queryCommandState(name)],
           ),
         ),
       );
     }
   }
+
   function command(name: string, value?: string) {
     editor.current?.focus();
     const current = window.getSelection();
@@ -94,33 +130,36 @@ export default function ServiceEditor({
     remember();
     sync();
   }
+
   return (
     <div>
-      <p id="service-description-label" className="mb-2 text-sm font-medium">
-        Description *
+      <p id={labelId} className="mb-2 text-sm font-medium">
+        {label} *
       </p>
-      <div className="overflow-hidden rounded-lg border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
+      <div
+        className={`overflow-hidden rounded-lg border bg-background focus-within:ring-2 focus-within:ring-ring ${error ? "border-destructive" : "border-input"}`}
+      >
         <div
           role="group"
-          aria-label="Description formatting"
+          aria-label={`${label} formatting`}
           className="flex flex-wrap items-center gap-1 border-b border-border bg-secondary/50 p-2"
         >
           {[
-            { name: "bold", label: "Bold", icon: Bold },
-            { name: "italic", label: "Italic", icon: Italic },
-            { name: "underline", label: "Underline", icon: Underline },
-            { name: "insertOrderedList", label: "Numbered list", icon: ListOrdered },
-            { name: "insertUnorderedList", label: "Bullet list", icon: List },
-            { name: "undo", label: "Undo", icon: Undo2 },
-            { name: "redo", label: "Redo", icon: Redo2 },
-          ].map(({ name, label, icon: Icon }) => (
+            { name: "bold", text: "Bold", icon: Bold },
+            { name: "italic", text: "Italic", icon: Italic },
+            { name: "underline", text: "Underline", icon: Underline },
+            { name: "insertOrderedList", text: "Numbered list", icon: ListOrdered },
+            { name: "insertUnorderedList", text: "Bullet list", icon: List },
+            { name: "undo", text: "Undo", icon: Undo2 },
+            { name: "redo", text: "Redo", icon: Redo2 },
+          ].map(({ name, text, icon: Icon }) => (
             <Button
               key={name}
               type="button"
               variant={active[name] ? "secondary" : "ghost"}
               size="icon"
-              aria-label={label}
-              title={label}
+              aria-label={text}
+              title={text}
               aria-pressed={name in active ? active[name] : undefined}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => command(name)}
@@ -146,12 +185,14 @@ export default function ServiceEditor({
             <option value="blockquote">Quote</option>
           </select>
           {allowImages && (
-            <label className="cursor-pointer rounded border border-input bg-background px-3 py-2 text-sm">
+            <label
+              className={`rounded border border-input bg-background px-3 py-2 text-sm ${busy ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+            >
               Insert images
               <input
                 aria-label="Insert article images"
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept={UPLOAD_TYPES.join(",")}
                 multiple
                 disabled={busy}
                 className="sr-only"
@@ -198,13 +239,14 @@ export default function ServiceEditor({
         <div
           ref={editor}
           role="textbox"
-          aria-labelledby="service-description-label"
-          aria-describedby="service-editor-help"
+          aria-labelledby={labelId}
+          aria-describedby={error && errorId ? `${helpId} ${errorId}` : helpId}
+          aria-invalid={error ? true : undefined}
           aria-multiline="true"
           aria-required="true"
           contentEditable
           suppressContentEditableWarning
-          className={`${serviceTextClass} [&_img]:my-4 [&_img]:max-w-full [&_img]:h-auto min-h-52 max-h-80 overflow-y-auto p-4 outline-none`}
+          className={`${richTextClass} [&_img]:my-4 [&_img]:h-auto [&_img]:max-w-full min-h-52 max-h-96 overflow-y-auto p-4 outline-none`}
           onMouseUp={remember}
           onKeyUp={remember}
           onBlur={remember}
@@ -224,8 +266,8 @@ export default function ServiceEditor({
               const count = new DOMParser()
                 .parseFromString(cleaned, "text/html")
                 .querySelectorAll("img").length;
-              if (count + (editor.current?.querySelectorAll("img").length ?? 0) > 5) {
-                setImageError("Use up to five images inside the article.");
+              if (count + imageCount() > ARTICLE_MAX_IMAGES) {
+                toast.error(`Use up to ${ARTICLE_MAX_IMAGES} images inside the article.`);
                 return;
               }
               command("insertHTML", cleaned);
@@ -238,30 +280,30 @@ export default function ServiceEditor({
           onDrop={(event) => event.preventDefault()}
         />
       </div>
-      <p id="service-editor-help" className="mt-2 text-xs text-muted-foreground">
+      <p id={helpId} className="mt-2 text-xs text-muted-foreground">
         {allowImages
-          ? "Paste text, formatted content or clipboard images. Insert up to five JPG/PNG/WebP images (600 KB each). Add alt text below for every image. Maximum 50,000 characters. Copied web images use their original HTTPS URL."
-          : "Select text to format it. Pasted text uses your editor formatting. Maximum 10,000 characters."}
+          ? `Paste text, formatted content or clipboard images. Insert up to ${ARTICLE_MAX_IMAGES} JPG/PNG/WebP images (5 MB each) and describe each one below. Up to ${maxText.toLocaleString("en-GB")} characters. Copied web images keep their original HTTPS address.`
+          : `Select text to format it. Pasted text uses your editor formatting. Up to ${maxText.toLocaleString("en-GB")} characters.`}
       </p>
-      {busy && (
-        <p role="status" className="mt-2 text-sm">
-          Reading images…
+      {error && (
+        <p id={errorId} className="mt-1.5 text-xs text-destructive">
+          {error}
         </p>
       )}
-      {imageError && (
-        <p role="alert" className="mt-2 text-sm text-destructive">
-          {imageError}
+      {busy && (
+        <p role="status" className="mt-2 text-sm">
+          {uploadStatus}
         </p>
       )}
       {allowImages &&
         images.map((image, index) => (
           <div
-            key={index}
+            key={`${index}-${image.src}`}
             className="mt-3 flex items-center gap-3 rounded border border-border p-3"
           >
             <img src={image.src} alt="" className="size-12 object-cover" />
             <label className="min-w-0 flex-1 text-xs">
-              Article image {index + 1} alt text *
+              Article image {index + 1} description *
               <input
                 required
                 maxLength={150}

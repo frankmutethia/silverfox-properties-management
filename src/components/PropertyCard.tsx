@@ -1,8 +1,9 @@
-import { ArrowUpRight, MapPin } from "lucide-react";
-import { type Property, propertyPrice, propertyCategories } from "@/data/properties";
+import { ArrowUpRight, ImageOff, MapPin } from "lucide-react";
+import { propertyCategories, propertyPrice } from "@/lib/properties";
+import type { ApiProperty } from "@/lib/types";
 import PropertyFacts from "./PropertyFacts";
 
-export default function PropertyCard({ property }: { property: Property }) {
+export default function PropertyCard({ property }: { property: ApiProperty }) {
   const photo = property.images[0];
   return (
     <article className="group min-w-0 overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-lg">
@@ -12,13 +13,20 @@ export default function PropertyCard({ property }: { property: Property }) {
         className="block h-full focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
       >
         <div className="relative aspect-[3/2] overflow-hidden bg-secondary">
-          <img
-            src={photo.src}
-            alt={photo.alt}
-            loading="lazy"
-            style={{ objectPosition: photo.position }}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-          />
+          {photo ? (
+            <img
+              src={photo.url}
+              alt={photo.alt}
+              loading="lazy"
+              style={{ objectPosition: photo.position ?? undefined }}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            />
+          ) : (
+            <ImageOff
+              className="absolute inset-0 m-auto size-8 text-muted-foreground"
+              aria-hidden="true"
+            />
+          )}
           <span className="absolute left-4 top-4 rounded-sm bg-background/95 px-3 py-1 text-xs font-semibold">
             {property.type}
           </span>

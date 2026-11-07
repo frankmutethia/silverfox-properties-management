@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Expand } from "lucide-react";
+import { ArrowLeft, ArrowRight, Expand, ImageOff } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -8,14 +8,31 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import type { Property } from "@/data/properties";
+import type { ApiProperty } from "@/lib/types";
 
-export default function PropertyGallery({ property }: { property: Property }) {
+export default function PropertyGallery({
+  property,
+}: {
+  property: Pick<ApiProperty, "name" | "images">;
+}) {
   const [active, setActive] = useState(0);
-  const photo = property.images[active] ?? property.images[0];
-  const multiple = property.images.length > 1;
+  const { images } = property;
+  const photo = images[active] ?? images[0];
+  const multiple = images.length > 1;
   const change = (step: number) =>
-    setActive((index) => (index + step + property.images.length) % property.images.length);
+    setActive((index) => (index + step + images.length) % images.length);
+  if (!photo) {
+    return (
+      <section
+        id="photos"
+        aria-label="Property photographs"
+        className="flex h-[360px] flex-col items-center justify-center gap-3 rounded-md bg-secondary text-sm text-muted-foreground sm:h-[500px]"
+      >
+        <ImageOff className="size-8" aria-hidden="true" />
+        Photographs will be added soon.
+      </section>
+    );
+  }
   return (
     <section id="photos" aria-label="Property photographs">
       <Dialog>
@@ -26,7 +43,7 @@ export default function PropertyGallery({ property }: { property: Property }) {
               aria-label={`Enlarge photo of ${property.name}`}
             >
               <img
-                src={photo.src}
+                src={photo.url}
                 alt={photo.alt}
                 className="h-[360px] w-full object-contain sm:h-[500px] lg:h-[560px]"
                 fetchPriority="high"
@@ -41,20 +58,20 @@ export default function PropertyGallery({ property }: { property: Property }) {
         <div className="mt-3 flex items-center justify-between gap-4 text-xs text-muted-foreground">
           <p>{photo.alt}</p>
           <p className="shrink-0">
-            {active + 1} / {property.images.length}
+            {active + 1} / {images.length}
           </p>
         </div>
         {multiple && (
           <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
-            {property.images.map((item, index) => (
+            {images.map((item, index) => (
               <button
-                key={item.src}
+                key={item.url}
                 onClick={() => setActive(index)}
                 aria-label={`Show photo ${index + 1}`}
                 aria-pressed={active === index}
                 className={`h-20 w-28 shrink-0 overflow-hidden rounded-sm border-2 ${active === index ? "border-accent" : "border-transparent"}`}
               >
-                <img src={item.src} alt={item.alt} className="h-full w-full object-cover" />
+                <img src={item.url} alt={item.alt} className="h-full w-full object-cover" />
               </button>
             ))}
           </div>
@@ -75,7 +92,7 @@ export default function PropertyGallery({ property }: { property: Property }) {
           <DialogTitle>{property.name}</DialogTitle>
           <DialogDescription>{photo.alt}</DialogDescription>
           <img
-            src={photo.src}
+            src={photo.url}
             alt={photo.alt}
             className="h-[55vh] w-full object-contain sm:h-[65vh]"
           />
@@ -92,7 +109,7 @@ export default function PropertyGallery({ property }: { property: Property }) {
               </Button>
             )}
             <span className="text-sm" aria-live="polite">
-              {active + 1} / {property.images.length}
+              {active + 1} / {images.length}
             </span>
             {multiple && (
               <Button

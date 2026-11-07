@@ -1,8 +1,5 @@
-import Blogs from "@/pages/AdminBlogs";
-import { readDrafts, type Draft } from "@/lib/blogs";
 import { useEffect, useState } from "react";
 import {
-  ArrowRight,
   ArrowUpRight,
   Building2,
   ChevronDown,
@@ -15,21 +12,17 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
-  Plus,
-  Search,
   BriefcaseBusiness,
   UserRound,
   MessageSquareQuote,
 } from "lucide-react";
-import { properties, propertyPrice, propertyCategories } from "@/data/properties";
-import CreateProperty from "@/components/CreateProperty";
+import AdminDashboard from "@/pages/AdminDashboard";
+import AdminProperties from "@/pages/AdminProperties";
 import AdminServices from "@/pages/AdminServices";
+import AdminBlogs from "@/pages/AdminBlogs";
 import AdminProfile from "@/pages/AdminProfile";
 import AdminTestimonials from "@/pages/AdminTestimonials";
-import { readProfile } from "@/lib/profile";
-import PropertyGallery from "@/components/PropertyGallery";
-import PropertyFacts from "@/components/PropertyFacts";
-import { readLocalProperties } from "@/lib/local-properties";
+import { LoadError } from "@/components/QueryState";
 import logo from "@/assets/silverfox-logo.jpg";
 import avatar from "@/assets/staff-avatar.svg";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -49,6 +42,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getMe, logout } from "@/lib/auth";
+import { setUnauthorizedHandler } from "@/lib/api";
+import type { ApiUser } from "@/lib/types";
+import { useQuery } from "@/lib/use-query";
 
 const navigation = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -58,13 +55,60 @@ const navigation = [
   { label: "Testimonials", href: "/admin/testimonials", icon: MessageSquareQuote },
   { label: "Profile", href: "/admin/profile", icon: UserRound },
 ];
+
+function toSignIn() {
+  const next = window.location.pathname;
+  window.location.replace(`/staff/login?next=${encodeURIComponent(next)}`);
+}
+
+async function signOut() {
+  try {
+    await logout();
+  } catch {
+    // The session may already be gone; sign-in is the right destination either way.
+  }
+  window.location.assign("/staff/login");
+}
+
+/** Guards the staff workspace: every admin page needs a valid session. */
 export default function Admin({ path }: { path: string }) {
+  // Any 401 while in the workspace (expired or revoked session) returns to sign-in.
+  useEffect(() => {
+    setUnauthorizedHandler(toSignIn);
+    return () => setUnauthorizedHandler(null);
+  }, []);
+  const session = useQuery((signal) => getMe(signal), []);
+  const [user, setUser] = useState<ApiUser | null>(null);
+  const current = user ?? session.data ?? null;
+
+  if (current) return <AdminShell path={path} user={current} onUserChange={setUser} />;
+  if (session.error && session.error.status !== 401)
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-5">
+        <LoadError error={session.error} onRetry={session.reload} />
+      </main>
+    );
+  return (
+    <main
+      className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground"
+      aria-busy="true"
+    >
+      <p role="status">Checking your session…</p>
+    </main>
+  );
+}
+
+function AdminShell({
+  path,
+  user,
+  onUserChange,
+}: {
+  path: string;
+  user: ApiUser;
+  onUserChange: (user: ApiUser) => void;
+}) {
   const [collapsed, setCollapsed] = useState(false);
-  const [profile, setProfile] = useState(readProfile);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [localProperties, setLocalProperties] = useState(readLocalProperties);
-  const collection = [...properties, ...localProperties];
-  const [drafts, setDrafts] = useState(readDrafts);
   const current = navigation.find((item) => item.href === path);
   const title = current?.label ?? "Page not found";
   useEffect(() => {
@@ -125,15 +169,16 @@ export default function Admin({ path }: { path: string }) {
             </>
           )}
         </a>
-        <a
-          href="/staff/login"
-          aria-label="Logout"
-          title="Logout"
+        <button
+          type="button"
+          onClick={() => void signOut()}
+          aria-label="Sign out"
+          title="Sign out"
           className="flex h-14 shrink-0 items-center justify-center gap-3 border-t border-border text-sm text-destructive hover:bg-secondary"
         >
           <LogOut className="size-4" />
-          {!collapsed && "Logout"}
-        </a>
+          {!collapsed && "Sign out"}
+        </button>
       </aside>
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-30 flex h-20 items-center justify-between gap-3 border-b border-border bg-card/95 px-4 backdrop-blur-xl sm:px-8">
@@ -158,13 +203,14 @@ export default function Admin({ path }: { path: string }) {
                 <DialogTitle>Silverfox workspace</DialogTitle>
                 <DialogDescription>Staff navigation</DialogDescription>
                 {links()}
-                <a
-                  href="/staff/login"
+                <button
+                  type="button"
+                  onClick={() => void signOut()}
                   className="flex min-h-11 items-center gap-3 text-sm text-destructive"
                 >
                   <LogOut className="size-4" />
-                  Logout
-                </a>
+                  Sign out
+                </button>
                 <a href="/" className="mt-6 text-sm text-muted-foreground">
                   View website
                 </a>
@@ -187,16 +233,18 @@ export default function Admin({ path }: { path: string }) {
                 <DialogDescription>Your guide to the Silverfox workspace.</DialogDescription>
                 <div className="space-y-4 text-sm leading-6">
                   <p>
-                    <strong>Properties:</strong> browse the website’s current collection and review
-                    missing listing information.
+                    <strong>Drafts and publishing:</strong> new properties, services, articles and
+                    testimonials start as drafts. Only published items appear on the website. Use
+                    Publish or Unpublish to switch.
                   </p>
                   <p>
-                    <strong>Blogs:</strong> write and save drafts in this browser. Drafts are not
-                    published to the website.
+                    <strong>Photos:</strong> JPG, PNG or WebP up to 5 MB. Describe every photo so
+                    the website stays accessible. A property needs at least one photo before it can
+                    be published.
                   </p>
                   <p>
-                    <strong>Account access:</strong> this is an interface preview. Secure staff
-                    accounts are not connected yet.
+                    <strong>Testimonials:</strong> visitor feedback arrives as Pending review.
+                    Publish it, or delete it to reject it.
                   </p>
                   <Button asChild>
                     <a href="mailto:Info@silverfoxpropertymanagement.co.ke">
@@ -210,27 +258,27 @@ export default function Admin({ path }: { path: string }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    aria-label="Open administrator profile"
+                    aria-label="Open your profile menu"
                     className="flex items-center gap-3 rounded-lg text-left"
                   >
                     <img
-                      src={profile.photo ?? avatar}
-                      alt="Administrator avatar"
+                      src={user.photo?.url ?? avatar}
+                      alt=""
                       className="size-10 rounded-full border-2 border-accent/25 object-cover"
                     />
                     <span className="hidden sm:block">
                       <span className="block max-w-40 truncate text-sm font-semibold">
-                        {profile.name}
+                        {user.name}
                       </span>
-                      <span className="block text-[11px] text-muted-foreground">
-                        Staff workspace
+                      <span className="block max-w-40 truncate text-[11px] text-muted-foreground">
+                        {user.email}
                       </span>
                     </span>
                     <ChevronDown className="hidden size-4 text-muted-foreground sm:block" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel className="truncate">{profile.name}</DropdownMenuLabel>
+                  <DropdownMenuLabel className="truncate">{user.name}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <a href="/admin/profile">
@@ -244,11 +292,9 @@ export default function Admin({ path }: { path: string }) {
                       View website
                     </a>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <a href="/staff/login">
-                      <LogOut className="mr-2 size-4" />
-                      Logout
-                    </a>
+                  <DropdownMenuItem onSelect={() => void signOut()}>
+                    <LogOut className="mr-2 size-4" />
+                    Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -257,15 +303,15 @@ export default function Admin({ path }: { path: string }) {
         </header>
         <main id="main-content" className="mx-auto max-w-[1500px] p-5 sm:p-8 xl:p-10">
           {path === "/admin" ? (
-            <Dashboard drafts={drafts} properties={collection} />
+            <AdminDashboard user={user} />
           ) : path === "/admin/properties" ? (
-            <Properties properties={collection} onCreated={setLocalProperties} />
+            <AdminProperties />
           ) : path === "/admin/services" ? (
             <AdminServices />
           ) : path === "/admin/blogs" ? (
-            <Blogs drafts={drafts} onSave={setDrafts} />
+            <AdminBlogs />
           ) : path === "/admin/profile" ? (
-            <AdminProfile profile={profile} onSave={setProfile} />
+            <AdminProfile user={user} onSave={onUserChange} />
           ) : path === "/admin/testimonials" ? (
             <AdminTestimonials />
           ) : (
@@ -283,324 +329,5 @@ export default function Admin({ path }: { path: string }) {
         </footer>
       </div>
     </div>
-  );
-}
-
-function Dashboard({
-  drafts,
-  properties,
-}: {
-  drafts: Draft[];
-  properties: import("@/data/properties").Property[];
-}) {
-  const apartments = properties.filter((property) => property.type === "Apartment").length;
-  return (
-    <>
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
-        <div>
-          <p className="mb-2 text-xs font-semibold text-accent">
-            {new Intl.DateTimeFormat("en-GB", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              timeZone: "Africa/Nairobi",
-            }).format(new Date())}
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Welcome back, Administrator<span className="text-accent">.</span>
-          </h1>
-          <p className="mt-3 text-sm text-muted-foreground">
-            A clear view of your properties and the stories behind them.
-          </p>
-        </div>
-        <Button variant="outline" asChild>
-          <a href="/">
-            View website <ArrowUpRight />
-          </a>
-        </Button>
-      </div>
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          {
-            label: "Total properties",
-            count: properties.length,
-            detail: "Website listings and local drafts",
-            icon: Building2,
-          },
-          {
-            label: "Apartments",
-            count: apartments,
-            detail: "Spaces for modern living",
-            icon: LayoutDashboard,
-          },
-          {
-            label: "Houses",
-            count: properties.length - apartments,
-            detail: "Homes in the collection",
-            icon: House,
-          },
-          {
-            label: "Blog drafts",
-            count: drafts.length,
-            detail: "Saved in this browser",
-            icon: FileText,
-          },
-        ].map(({ label, count, detail, icon: Icon }) => (
-          <article key={label} className="admin-panel p-5">
-            <div className="mb-6 flex items-center justify-between">
-              <span className="rounded-xl bg-accent/10 p-3 text-accent">
-                <Icon className="size-5" />
-              </span>
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                {label === "Blog drafts" ? "Local" : "Collection"}
-              </span>
-            </div>
-            <p className="text-3xl font-semibold tracking-tight">
-              {count.toString().padStart(2, "0")}
-            </p>
-            <h2 className="mb-1 mt-2 text-sm font-semibold">{label}</h2>
-            <p className="text-xs text-muted-foreground">{detail}</p>
-          </article>
-        ))}
-      </div>
-      <div className="grid items-start gap-6 xl:grid-cols-[1.7fr_1fr]">
-        <section className="admin-panel overflow-hidden">
-          <div className="flex items-center justify-between gap-3 border-b border-border p-5">
-            <div>
-              <h2 className="font-semibold">Property collection</h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                A closer look at the homes we represent.
-              </p>
-            </div>
-            <a
-              href="/admin/properties"
-              className="flex shrink-0 items-center gap-1 text-xs font-semibold text-primary"
-            >
-              View all <ArrowRight className="size-3" />
-            </a>
-          </div>
-          <div className="divide-y divide-border">
-            {properties.slice(0, 4).map((property) => (
-              <a
-                href={
-                  propertiesFromWebsite(property.slug)
-                    ? `/properties/${property.slug}`
-                    : `/admin/properties?view=${property.slug}`
-                }
-                key={property.slug}
-                className="flex items-center gap-4 p-5 hover:bg-secondary/50"
-              >
-                <img
-                  src={property.images[0].src}
-                  alt={property.images[0].alt}
-                  className="h-14 w-20 rounded-lg object-cover"
-                />
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-sm font-semibold">{property.name}</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {property.reference} · {property.type}
-                  </p>
-                </div>
-                <span className="hidden rounded-full bg-secondary px-3 py-1 text-[10px] text-muted-foreground sm:block">
-                  {propertiesFromWebsite(property.slug) ? "Details pending" : "Local draft"}
-                </span>
-                <ArrowUpRight className="size-4 shrink-0 text-muted-foreground" />
-              </a>
-            ))}
-          </div>
-        </section>
-        <div className="space-y-6">
-          <section className="admin-panel p-6">
-            <p className="mb-4 text-[10px] font-bold uppercase tracking-[.16em] text-accent">
-              Next on your list
-            </p>
-            <h2 className="text-lg font-semibold">Make every listing count.</h2>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              The collection is ready for confirmed locations, pricing and specifications. Complete
-              information helps people find their next home.
-            </p>
-            <a
-              href="/admin/properties"
-              className="mt-5 flex items-center gap-2 text-sm font-semibold text-primary"
-            >
-              Review properties <ArrowRight className="size-4" />
-            </a>
-          </section>
-          <section className="admin-panel p-6">
-            <div className="mb-4 flex items-center gap-3">
-              <FileText className="size-5 text-accent" />
-              <h2 className="font-semibold">From the journal</h2>
-            </div>
-            <p className="text-sm leading-6 text-muted-foreground">
-              {drafts.length
-                ? `${drafts.length} draft${drafts.length === 1 ? " is" : "s are"} ready for your next edit.`
-                : "Good advice starts with a first draft. Share your perspective on better property care."}
-            </p>
-            <Button variant="outline" asChild className="mt-5">
-              <a href="/admin/blogs">
-                <Plus />
-                {drafts.length ? "Open blogs" : "Write your first blog"}
-              </a>
-            </Button>
-          </section>
-        </div>
-      </div>
-    </>
-  );
-}
-
-function propertiesFromWebsite(slug: string) {
-  return properties.some((item) => item.slug === slug);
-}
-
-function Properties({
-  properties,
-  onCreated,
-}: {
-  properties: import("@/data/properties").Property[];
-  onCreated: (items: import("@/data/properties").Property[]) => void;
-}) {
-  const selected = properties.find(
-    (item) => item.slug === new URLSearchParams(window.location.search).get("view"),
-  );
-  const [query, setQuery] = useState("");
-  const [type, setType] = useState("");
-  const results = properties.filter(
-    (item) =>
-      (!type || item.type === type) &&
-      `${item.name} ${item.reference} ${item.location ?? ""}`
-        .toLowerCase()
-        .includes(query.trim().toLowerCase()),
-  );
-  return (
-    <>
-      {selected && (
-        <Dialog defaultOpen>
-          <DialogContent className="max-h-[90dvh] max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-3xl">
-            <DialogTitle>{selected.name}</DialogTitle>
-            <DialogDescription>
-              {selected.reference} · Local draft · {selected.location ?? "Location to be confirmed"}
-            </DialogDescription>
-            <PropertyGallery property={selected} />
-            <PropertyFacts property={selected} />
-            <p className="font-semibold">{propertyPrice(selected)}</p>
-            <p>
-              {selected.category
-                ? propertyCategories[selected.category]
-                : "Category to be confirmed"}
-            </p>
-            <p className="whitespace-pre-line text-sm">{selected.neighbourhood}</p>
-            <p className="text-sm leading-6">{selected.description}</p>
-            <p className="text-sm text-muted-foreground">
-              Amenities: {selected.amenities.join(", ") || "To be confirmed"}
-            </p>
-          </DialogContent>
-        </Dialog>
-      )}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="admin-eyebrow">The Silverfox collection</p>
-          <h1 className="admin-title">Properties</h1>
-        </div>
-        <CreateProperty properties={properties} onCreated={onCreated} />
-      </div>
-      <p className="mb-8 mt-3 text-sm text-muted-foreground">
-        Review your collection, create a property, or explore listing details.
-      </p>
-      <section className="admin-panel overflow-hidden">
-        <div className="flex flex-wrap items-center gap-3 border-b border-border p-5">
-          <div className="relative min-w-0 basis-full sm:flex-1">
-            <Search className="absolute left-3 top-3.5 size-4 text-muted-foreground" />
-            <input
-              aria-label="Search properties"
-              className="admin-input pl-10"
-              placeholder="Search name, location or reference…"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </div>
-          <select
-            aria-label="Property type"
-            className="admin-input w-auto"
-            value={type}
-            onChange={(event) => setType(event.target.value)}
-          >
-            <option value="">All property types</option>
-            <option>Apartment</option>
-            <option>House</option>
-          </select>
-        </div>
-        <div className="relative overflow-x-auto">
-          <table className="w-full min-w-[800px] text-left text-sm">
-            <thead className="bg-secondary/50 text-[10px] uppercase tracking-wider text-muted-foreground">
-              <tr>
-                {["Property", "Location", "Price", "Status", ""].map((label) => (
-                  <th key={label} scope="col" className="px-5 py-4">
-                    {label || <span className="sr-only">View listing</span>}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {results.map((property) => (
-                <tr key={property.slug} className="hover:bg-secondary/30">
-                  <td className="p-5">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={property.images[0].src}
-                        alt=""
-                        className="h-14 w-16 rounded-lg object-cover"
-                      />
-                      <div className="whitespace-nowrap font-semibold">
-                        {property.name}
-                        <p className="mt-1 text-xs text-accent">
-                          {property.category
-                            ? propertyCategories[property.category]
-                            : "Category to be confirmed"}
-                        </p>
-                        <p className="mt-1 text-xs font-normal text-muted-foreground">
-                          {property.reference} · {property.type}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 text-xs text-muted-foreground">
-                    {property.location ?? "Awaiting confirmation"}
-                  </td>
-                  <td className="whitespace-nowrap px-5 text-xs">{propertyPrice(property)}</td>
-                  <td className="px-5">
-                    <span className="whitespace-nowrap rounded-full bg-secondary px-3 py-1 text-[10px] text-muted-foreground">
-                      {propertiesFromWebsite(property.slug) ? "Details pending" : "Local draft"}
-                    </span>
-                  </td>
-                  <td className="px-5">
-                    <a
-                      href={
-                        propertiesFromWebsite(property.slug)
-                          ? `/properties/${property.slug}`
-                          : `/admin/properties?view=${property.slug}`
-                      }
-                      aria-label={`View ${property.name}`}
-                      className="flex size-10 items-center justify-center rounded-lg border border-border hover:bg-secondary"
-                    >
-                      <ArrowUpRight className="size-4" />
-                    </a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!results.length && (
-          <p className="p-12 text-center text-sm text-muted-foreground">
-            No properties match your search. Try another name or type.
-          </p>
-        )}
-        <p role="status" className="border-t border-border px-5 py-4 text-xs text-muted-foreground">
-          {results.length} of {properties.length} properties · New properties are saved in this
-          browser.
-        </p>
-      </section>
-    </>
   );
 }

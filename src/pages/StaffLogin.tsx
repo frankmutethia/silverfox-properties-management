@@ -1,12 +1,38 @@
-import { useState } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Building2, Eye, EyeOff, FileText, ShieldCheck } from "lucide-react";
 import photo from "@/assets/precondo-ca-QHDFm084RNk-unsplash.jpg";
 import logo from "@/assets/silverfox-logo.jpg";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
+import FieldError from "@/components/admin/FieldError";
+import { forgotPassword, login, PASSWORD_MIN_LENGTH, resetPassword } from "@/lib/auth";
+import { useFieldErrors } from "@/lib/form-errors";
+import { toApiError } from "@/lib/api";
 
-export default function StaffLogin({ recovery = false }: { recovery?: boolean }) {
-  const [visible, setVisible] = useState(false);
+type View = "login" | "forgot" | "reset";
+
+const headings: Record<View, { title: string; intro: string }> = {
+  login: {
+    title: "Welcome back.",
+    intro: "Sign in to your workspace. A little more clarity, a better day of property care.",
+  },
+  forgot: {
+    title: "Let’s get you back in.",
+    intro: "Enter your work email and we’ll send you a link to choose a new password.",
+  },
+  reset: {
+    title: "Choose a new password.",
+    intro: `Use at least ${PASSWORD_MIN_LENGTH} characters. Resetting signs you out on every device.`,
+  },
+};
+
+/** Only same-site admin paths are allowed as the post-login destination. */
+function nextPath() {
+  const next = new URLSearchParams(window.location.search).get("next") ?? "";
+  return /^\/admin(\/[\w-]*)*$/.test(next) ? next : "/admin";
+}
+
+export default function StaffLogin({ view }: { view: View }) {
   return (
     <main className="staff-login min-h-screen bg-background font-sans text-foreground">
       <section className="relative hidden overflow-hidden bg-brand-surface text-brand-surface-foreground lg:flex lg:flex-col lg:justify-between">
@@ -62,88 +88,285 @@ export default function StaffLogin({ recovery = false }: { recovery?: boolean })
           <p className="mb-3 text-xs font-bold uppercase tracking-[.18em] text-accent">
             Silverfox staff portal
           </p>
-          <h2 className="text-3xl font-semibold tracking-tight">
-            {recovery ? "Let’s get you back in." : "Welcome back."}
-          </h2>
+          <h2 className="text-3xl font-semibold tracking-tight">{headings[view].title}</h2>
           <p className="mb-8 mt-3 text-sm leading-6 text-muted-foreground">
-            {recovery
-              ? "Contact your administrator for help accessing your staff account."
-              : "Sign in to your workspace. A little more clarity, a better day of property care."}
+            {headings[view].intro}
           </p>
-          {recovery ? (
-            <div className="space-y-6">
-              <p className="rounded-lg border border-border bg-secondary p-4 text-sm leading-6">
-                Password recovery will be available when staff accounts are connected. No reset
-                email is sent from this preview.
-              </p>
-              <Button asChild className="w-full">
-                <a href="mailto:Info@silverfoxpropertymanagement.co.ke?subject=Staff%20account%20access">
-                  Contact administrator
-                </a>
-              </Button>
-              <a href="/staff/login" className="block text-center text-sm text-primary">
-                Back to sign in
-              </a>
-            </div>
-          ) : (
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                window.location.assign("/admin");
-              }}
-              className="space-y-5"
-            >
-              <label className="block text-sm font-medium">
-                Work email
-                <input
-                  className="admin-input mt-2"
-                  type="email"
-                  autoComplete="username"
-                  placeholder="you@silverfoxpropertymanagement.co.ke"
-                  required
-                />
-              </label>
-              <div>
-                <div className="mb-2 flex items-center justify-between text-sm">
-                  <label htmlFor="staff-password" className="font-medium">
-                    Password
-                  </label>
-                  <a href="/staff/forgot-password" className="text-primary hover:underline">
-                    Forgot password?
-                  </a>
-                </div>
-                <div className="relative">
-                  <input
-                    id="staff-password"
-                    className="admin-input pr-12"
-                    type={visible ? "text" : "password"}
-                    autoComplete="current-password"
-                    placeholder="Enter your password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setVisible(!visible)}
-                    aria-label={visible ? "Hide password" : "Show password"}
-                    className="absolute right-1 top-1 flex size-10 items-center justify-center text-muted-foreground"
-                  >
-                    {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
-              </div>
-              <Button type="submit" className="h-12 w-full">
-                Sign in <ArrowRight />
-              </Button>
-              <p className="border-t border-border pt-6 text-xs leading-6 text-muted-foreground">
-                Need a staff account? Contact your Silverfox administrator.
-              </p>
-            </form>
-          )}
+          {view === "login" ? <LoginForm /> : view === "forgot" ? <ForgotForm /> : <ResetForm />}
         </div>
         <p className="text-center text-xs text-muted-foreground">
           © {new Date().getFullYear()} Silverfox Property Management
         </p>
       </section>
     </main>
+  );
+}
+
+function Alert({ children }: { children: ReactNode }) {
+  return (
+    <p role="alert" className="text-sm text-destructive">
+      {children}
+    </p>
+  );
+}
+
+function PasswordInput({
+  id,
+  name,
+  autoComplete,
+  describe,
+  minLength,
+}: {
+  id: string;
+  name: string;
+  autoComplete: string;
+  describe: ReturnType<ReturnType<typeof useFieldErrors>["describe"]>;
+  minLength?: number;
+}) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        id={id}
+        name={name}
+        className="admin-input pr-12"
+        type={visible ? "text" : "password"}
+        autoComplete={autoComplete}
+        required
+        minLength={minLength}
+        maxLength={200}
+        {...describe}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible(!visible)}
+        aria-label={visible ? "Hide password" : "Show password"}
+        className="absolute right-1 top-1 flex size-10 items-center justify-center text-muted-foreground"
+      >
+        {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+      </button>
+    </div>
+  );
+}
+
+function LoginForm() {
+  const form = useFieldErrors(["email", "password"]);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    setBusy(true);
+    setError("");
+    form.clear();
+    try {
+      await login(
+        String(data.get("email") ?? "").trim(),
+        String(data.get("password") ?? ""),
+        data.get("remember") === "on",
+      );
+      window.location.assign(nextPath());
+    } catch (loginError) {
+      // 401 wrong credentials, 403 deactivated, 429 too many attempts: show the API's words.
+      setError(toApiError(loginError).message);
+      setBusy(false);
+    }
+  }
+  return (
+    <form onSubmit={submit} className="space-y-5">
+      <label className="block text-sm font-medium">
+        Work email
+        <input
+          name="email"
+          className="admin-input mt-2"
+          type="email"
+          autoComplete="username"
+          placeholder="you@silverfoxpropertymanagement.co.ke"
+          required
+          maxLength={255}
+          {...form.describe("email")}
+        />
+        <FieldError form={form} name="email" />
+      </label>
+      <div>
+        <div className="mb-2 flex items-center justify-between text-sm">
+          <label htmlFor="staff-password" className="font-medium">
+            Password
+          </label>
+          <a href="/staff/forgot-password" className="text-primary hover:underline">
+            Forgot password?
+          </a>
+        </div>
+        <PasswordInput
+          id="staff-password"
+          name="password"
+          autoComplete="current-password"
+          describe={form.describe("password")}
+        />
+        <FieldError form={form} name="password" />
+      </div>
+      <label className="flex items-center gap-3 text-sm">
+        <input name="remember" type="checkbox" className="size-4 accent-primary" />
+        Remember me for 30 days
+      </label>
+      {error && <Alert>{error}</Alert>}
+      <Button type="submit" className="h-12 w-full" disabled={busy}>
+        {busy ? "Signing in…" : "Sign in"} <ArrowRight />
+      </Button>
+      <p className="border-t border-border pt-6 text-xs leading-6 text-muted-foreground">
+        Need a staff account? Contact your Silverfox administrator.
+      </p>
+    </form>
+  );
+}
+
+function ForgotForm() {
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const email = String(new FormData(event.currentTarget).get("email") ?? "").trim();
+    setBusy(true);
+    setError("");
+    try {
+      setMessage(await forgotPassword(email));
+    } catch (requestError) {
+      setError(toApiError(requestError).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (message)
+    return (
+      <div className="space-y-6">
+        <p
+          role="status"
+          className="rounded-lg border border-border bg-secondary p-4 text-sm leading-6"
+        >
+          {message} The link is valid for 60 minutes and can be used once.
+        </p>
+        <a href="/staff/login" className="block text-center text-sm text-primary">
+          Back to sign in
+        </a>
+      </div>
+    );
+  return (
+    <form onSubmit={submit} className="space-y-5">
+      <label className="block text-sm font-medium">
+        Work email
+        <input
+          name="email"
+          className="admin-input mt-2"
+          type="email"
+          autoComplete="username"
+          required
+          maxLength={255}
+        />
+      </label>
+      {error && <Alert>{error}</Alert>}
+      <Button type="submit" className="h-12 w-full" disabled={busy}>
+        {busy ? "Sending…" : "Send reset link"}
+      </Button>
+      <a href="/staff/login" className="block text-center text-sm text-primary">
+        Back to sign in
+      </a>
+    </form>
+  );
+}
+
+function ResetForm() {
+  const token = new URLSearchParams(window.location.search).get("token") ?? "";
+  const form = useFieldErrors(["newPassword", "confirmPassword", "token"]);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const newPassword = String(data.get("newPassword") ?? "");
+    const confirmPassword = String(data.get("confirmPassword") ?? "");
+    const problems: Record<string, string> = {};
+    if (newPassword.length < PASSWORD_MIN_LENGTH)
+      problems["newPassword"] = `Use at least ${PASSWORD_MIN_LENGTH} characters.`;
+    if (newPassword !== confirmPassword) problems["confirmPassword"] = "Passwords do not match.";
+    form.setErrors(problems);
+    setError("");
+    if (Object.keys(problems).length) return;
+    setBusy(true);
+    try {
+      setMessage(await resetPassword({ token, newPassword, confirmPassword }));
+    } catch (resetError) {
+      setError(toApiError(resetError).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (!token)
+    return (
+      <div className="space-y-6">
+        <Alert>
+          This reset link is incomplete. Request a new link and use it within 60 minutes.
+        </Alert>
+        <a href="/staff/forgot-password" className="block text-center text-sm text-primary">
+          Request a new link
+        </a>
+      </div>
+    );
+  if (message)
+    return (
+      <div className="space-y-6">
+        <p
+          role="status"
+          className="rounded-lg border border-border bg-secondary p-4 text-sm leading-6"
+        >
+          {message}
+        </p>
+        <Button asChild className="h-12 w-full">
+          <a href="/staff/login">
+            Sign in <ArrowRight />
+          </a>
+        </Button>
+      </div>
+    );
+  return (
+    <form onSubmit={submit} className="space-y-5" noValidate>
+      <div>
+        <label htmlFor="new-password" className="mb-2 block text-sm font-medium">
+          New password
+        </label>
+        <PasswordInput
+          id="new-password"
+          name="newPassword"
+          autoComplete="new-password"
+          minLength={PASSWORD_MIN_LENGTH}
+          describe={form.describe("newPassword")}
+        />
+        <FieldError form={form} name="newPassword" />
+      </div>
+      <div>
+        <label htmlFor="confirm-password" className="mb-2 block text-sm font-medium">
+          Confirm new password
+        </label>
+        <PasswordInput
+          id="confirm-password"
+          name="confirmPassword"
+          autoComplete="new-password"
+          describe={form.describe("confirmPassword")}
+        />
+        <FieldError form={form} name="confirmPassword" />
+      </div>
+      {error && (
+        <div className="space-y-2">
+          <Alert>{error}</Alert>
+          <a href="/staff/forgot-password" className="text-sm text-primary">
+            Request a new link
+          </a>
+        </div>
+      )}
+      <Button type="submit" className="h-12 w-full" disabled={busy}>
+        {busy ? "Saving…" : "Reset password"}
+      </Button>
+    </form>
   );
 }

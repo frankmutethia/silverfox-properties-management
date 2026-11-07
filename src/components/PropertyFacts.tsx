@@ -1,7 +1,11 @@
 import { Bath, BedDouble, Ruler } from "lucide-react";
-import type { Property } from "@/data/properties";
+import type { ApiProperty } from "@/lib/types";
 
-export default function PropertyFacts({ property }: { property: Property }) {
+export default function PropertyFacts({
+  property,
+}: {
+  property: Pick<ApiProperty, "bedrooms" | "bathrooms" | "areaSqm">;
+}) {
   return (
     <dl className="grid grid-cols-3 gap-2 border-y border-border py-4">
       {[
