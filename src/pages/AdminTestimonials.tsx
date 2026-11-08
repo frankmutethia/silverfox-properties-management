@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Plus, Star, MessageSquareQuote, ArrowUpRight, Pencil, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { notifyCreated, notifyDeleted, notifyStatusChanged, notifyUpdated } from "@/lib/notify";
 import {
   createTestimonial,
   deleteTestimonial,
@@ -52,11 +52,12 @@ export default function AdminTestimonials() {
     setWorking(item._id);
     try {
       const saved = await toggleTestimonialPublish(item._id);
-      toast.success(
-        saved.status === "published"
-          ? `${saved.name}’s testimonial is now on the website.`
-          : `${saved.name}’s testimonial moved to drafts and hidden from the website.`,
-      );
+      notifyStatusChanged({
+        kind: "Testimonial",
+        name: saved.name,
+        status: saved.status,
+        href: "/#testimonials",
+      });
       refresh();
     } catch (error) {
       reportError(error);
@@ -210,7 +211,7 @@ export default function AdminTestimonials() {
         onConfirm={async () => {
           if (!deleting) return;
           await deleteTestimonial(deleting._id);
-          toast.success("Testimonial deleted.");
+          notifyDeleted("Testimonial", deleting.name);
           if (items.length === 1 && page > 1) setPage(page - 1);
           else refresh();
         }}
@@ -247,15 +248,17 @@ function TestimonialForm({
       ?.value as PublicationStatus | undefined;
     setBusy(true);
     try {
-      if (testimonial) await updateTestimonial(testimonial._id, input);
-      else await createTestimonial({ ...input, status: status ?? "draft" });
-      toast.success(
-        testimonial
-          ? "Testimonial updated."
-          : status === "published"
-            ? "Testimonial published on the website."
-            : "Testimonial saved as a draft.",
-      );
+      const saved = testimonial
+        ? await updateTestimonial(testimonial._id, input)
+        : await createTestimonial({ ...input, status: status ?? "draft" });
+      const item = {
+        kind: "Testimonial" as const,
+        name: saved.name,
+        status: saved.status,
+        href: "/#testimonials",
+      };
+      if (testimonial) notifyUpdated(item);
+      else notifyCreated(item);
       onSaved();
       onOpenChange(false);
     } catch (error) {

@@ -1,9 +1,10 @@
 import { useState, type FormEvent, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Building2, Eye, EyeOff, FileText, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Building2, FileText, ShieldCheck } from "lucide-react";
 import photo from "@/assets/precondo-ca-QHDFm084RNk-unsplash.jpg";
 import logo from "@/assets/silverfox-logo.jpg";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
+import PasswordInput from "@/components/PasswordInput";
 import FieldError from "@/components/admin/FieldError";
 import { forgotPassword, login, PASSWORD_MIN_LENGTH, resetPassword } from "@/lib/auth";
 import { useFieldErrors } from "@/lib/form-errors";
@@ -110,45 +111,6 @@ function Alert({ children }: { children: ReactNode }) {
   );
 }
 
-function PasswordInput({
-  id,
-  name,
-  autoComplete,
-  describe,
-  minLength,
-}: {
-  id: string;
-  name: string;
-  autoComplete: string;
-  describe: ReturnType<ReturnType<typeof useFieldErrors>["describe"]>;
-  minLength?: number;
-}) {
-  const [visible, setVisible] = useState(false);
-  return (
-    <div className="relative">
-      <input
-        id={id}
-        name={name}
-        className="admin-input pr-12"
-        type={visible ? "text" : "password"}
-        autoComplete={autoComplete}
-        required
-        minLength={minLength}
-        maxLength={200}
-        {...describe}
-      />
-      <button
-        type="button"
-        onClick={() => setVisible(!visible)}
-        aria-label={visible ? "Hide password" : "Show password"}
-        className="absolute right-1 top-1 flex size-10 items-center justify-center text-muted-foreground"
-      >
-        {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-      </button>
-    </div>
-  );
-}
-
 function LoginForm() {
   const form = useFieldErrors(["email", "password"]);
   const [error, setError] = useState("");
@@ -201,7 +163,8 @@ function LoginForm() {
           id="staff-password"
           name="password"
           autoComplete="current-password"
-          describe={form.describe("password")}
+          label="Password"
+          {...form.describe("password")}
         />
         <FieldError form={form} name="password" />
       </div>
@@ -340,7 +303,8 @@ function ResetForm() {
           name="newPassword"
           autoComplete="new-password"
           minLength={PASSWORD_MIN_LENGTH}
-          describe={form.describe("newPassword")}
+          label="New password"
+          {...form.describe("newPassword")}
         />
         <FieldError form={form} name="newPassword" />
       </div>
@@ -352,7 +316,8 @@ function ResetForm() {
           id="confirm-password"
           name="confirmPassword"
           autoComplete="new-password"
-          describe={form.describe("confirmPassword")}
+          label="Confirm new password"
+          {...form.describe("confirmPassword")}
         />
         <FieldError form={form} name="confirmPassword" />
       </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import {
   ArrowUpRight,
   Building2,
@@ -15,6 +15,7 @@ import {
   BriefcaseBusiness,
   UserRound,
   MessageSquareQuote,
+  UsersRound,
 } from "lucide-react";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProperties from "@/pages/AdminProperties";
@@ -22,7 +23,9 @@ import AdminServices from "@/pages/AdminServices";
 import AdminBlogs from "@/pages/AdminBlogs";
 import AdminProfile from "@/pages/AdminProfile";
 import AdminTestimonials from "@/pages/AdminTestimonials";
-import { LoadError } from "@/components/QueryState";
+import AdminUsers from "@/pages/AdminUsers";
+import { LineSkeletons, LoadError } from "@/components/QueryState";
+import { Skeleton } from "@/components/ui/skeleton";
 import logo from "@/assets/silverfox-logo.jpg";
 import avatar from "@/assets/staff-avatar.svg";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -53,6 +56,7 @@ const navigation = [
   { label: "Services", href: "/admin/services", icon: BriefcaseBusiness },
   { label: "Blogs", href: "/admin/blogs", icon: FileText },
   { label: "Testimonials", href: "/admin/testimonials", icon: MessageSquareQuote },
+  { label: "User Management", href: "/admin/users", icon: UsersRound },
   { label: "Profile", href: "/admin/profile", icon: UserRound },
 ];
 
@@ -70,18 +74,50 @@ async function signOut() {
   window.location.assign("/staff/login");
 }
 
-/** Guards the staff workspace: every admin page needs a valid session. */
-export default function Admin({ path }: { path: string }) {
-  // Any 401 while in the workspace (expired or revoked session) returns to sign-in.
+const normalize = (pathname: string) => pathname.replace(/\/+$/, "") || "/";
+
+/**
+ * Guards the staff workspace. The session check and the page's own data load in parallel;
+ * any 401 (signed out, expired or revoked session) returns to sign-in.
+ */
+export default function Admin({ path: initialPath }: { path: string }) {
   useEffect(() => {
     setUnauthorizedHandler(toSignIn);
     return () => setUnauthorizedHandler(null);
   }, []);
   const session = useQuery((signal) => getMe(signal), []);
   const [user, setUser] = useState<ApiUser | null>(null);
-  const current = user ?? session.data ?? null;
+  const [path, setPath] = useState(initialPath);
 
-  if (current) return <AdminShell path={path} user={current} onUserChange={setUser} />;
+  // Moving between workspace pages swaps the page in place instead of reloading the app,
+  // so the session isn't re-checked and only the new page's data is fetched.
+  useEffect(() => {
+    const onPopState = () => setPath(normalize(window.location.pathname));
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+  function navigate(event: MouseEvent<HTMLElement>) {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    )
+      return;
+    const link = (event.target as Element).closest("a");
+    if (!link || link.target || link.hasAttribute("download") || link.origin !== location.origin)
+      return;
+    const next = normalize(link.pathname);
+    if (next !== "/admin" && !next.startsWith("/admin/")) return;
+    event.preventDefault();
+    if (next !== path || link.search)
+      window.history.pushState(null, "", link.pathname + link.search);
+    setPath(next);
+    window.scrollTo({ top: 0 });
+  }
+
   if (session.error && session.error.status !== 401)
     return (
       <main className="flex min-h-screen items-center justify-center bg-background px-5">
@@ -89,12 +125,12 @@ export default function Admin({ path }: { path: string }) {
       </main>
     );
   return (
-    <main
-      className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground"
-      aria-busy="true"
-    >
-      <p role="status">Checking your session…</p>
-    </main>
+    <AdminShell
+      path={path}
+      user={user ?? session.data ?? null}
+      onUserChange={setUser}
+      onNavigate={navigate}
+    />
   );
 }
 
@@ -102,10 +138,13 @@ function AdminShell({
   path,
   user,
   onUserChange,
+  onNavigate,
 }: {
   path: string;
-  user: ApiUser;
+  /** Null while the session check is in flight. */
+  user: ApiUser | null;
   onUserChange: (user: ApiUser) => void;
+  onNavigate: (event: MouseEvent<HTMLElement>) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -113,6 +152,7 @@ function AdminShell({
   const title = current?.label ?? "Page not found";
   useEffect(() => {
     document.title = `${title} | Silverfox Staff`;
+    setMobileOpen(false);
   }, [title]);
   function links(compact = false) {
     return (
@@ -134,7 +174,10 @@ function AdminShell({
     );
   }
   return (
-    <div className="admin-shell flex min-h-screen bg-secondary/45 font-sans text-foreground">
+    <div
+      className="admin-shell flex min-h-screen bg-secondary/45 font-sans text-foreground"
+      onClick={onNavigate}
+    >
       <aside
         className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border bg-card transition-[width] lg:flex ${collapsed ? "w-20" : "w-64"}`}
       >
@@ -262,23 +305,25 @@ function AdminShell({
                     className="flex items-center gap-3 rounded-lg text-left"
                   >
                     <img
-                      src={user.photo?.url ?? avatar}
+                      src={user?.photo?.url ?? avatar}
                       alt=""
                       className="size-10 rounded-full border-2 border-accent/25 object-cover"
                     />
                     <span className="hidden sm:block">
                       <span className="block max-w-40 truncate text-sm font-semibold">
-                        {user.name}
+                        {user ? user.name : <Skeleton className="h-4 w-28" />}
                       </span>
                       <span className="block max-w-40 truncate text-[11px] text-muted-foreground">
-                        {user.email}
+                        {user?.email ?? "Staff workspace"}
                       </span>
                     </span>
                     <ChevronDown className="hidden size-4 text-muted-foreground sm:block" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel className="truncate">{user.name}</DropdownMenuLabel>
+                  <DropdownMenuLabel className="truncate">
+                    {user?.name ?? "Staff"}
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <a href="/admin/profile">
@@ -311,7 +356,13 @@ function AdminShell({
           ) : path === "/admin/blogs" ? (
             <AdminBlogs />
           ) : path === "/admin/profile" ? (
-            <AdminProfile user={user} onSave={onUserChange} />
+            user ? (
+              <AdminProfile user={user} onSave={onUserChange} />
+            ) : (
+              <LineSkeletons lines={8} className="admin-panel p-8" />
+            )
+          ) : path === "/admin/users" ? (
+            <AdminUsers user={user} />
           ) : path === "/admin/testimonials" ? (
             <AdminTestimonials />
           ) : (

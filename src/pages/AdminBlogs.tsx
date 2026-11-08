@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ArrowUpRight, Pencil, Plus, Search, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { notifyDeleted, notifyStatusChanged } from "@/lib/notify";
 import { deletePost, listAdminPosts, togglePostPublish } from "@/lib/blog";
 import type { ApiPost, PublicationStatus } from "@/lib/types";
 import { reportError, useDebounced, useQuery } from "@/lib/use-query";
@@ -36,11 +36,12 @@ export default function AdminBlogs() {
     setToggling(post._id);
     try {
       const saved = await togglePostPublish(post._id);
-      toast.success(
-        saved.status === "published"
-          ? `“${saved.title}” is now published.`
-          : `“${saved.title}” moved to drafts and hidden from the website.`,
-      );
+      notifyStatusChanged({
+        kind: "Article",
+        name: saved.title,
+        status: saved.status,
+        href: `/blogs/${saved.slug}`,
+      });
       result.reload();
     } catch (error) {
       reportError(error);
@@ -193,7 +194,7 @@ export default function AdminBlogs() {
         onConfirm={async () => {
           if (!deleting) return;
           await deletePost(deleting._id);
-          toast.success(`“${deleting.title}” deleted.`);
+          notifyDeleted("Article", deleting.title);
           if (posts.length === 1 && page > 1) setPage(page - 1);
           else result.reload();
         }}

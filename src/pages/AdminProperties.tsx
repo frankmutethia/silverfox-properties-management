@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ArrowUpRight, ImageOff, Pencil, Plus, Search, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { notifyDeleted, notifyStatusChanged } from "@/lib/notify";
 import {
   deleteProperty,
   listAdminProperties,
@@ -58,11 +58,12 @@ export default function AdminProperties() {
     setToggling(property._id);
     try {
       const saved = await togglePropertyPublish(property._id);
-      toast.success(
-        saved.status === "published"
-          ? `${saved.name} is now live on the website.`
-          : `${saved.name} moved to drafts and hidden from the website.`,
-      );
+      notifyStatusChanged({
+        kind: "Property",
+        name: saved.name,
+        status: saved.status,
+        href: `/properties/${saved.slug}`,
+      });
       result.reload();
     } catch (error) {
       reportError(error);
@@ -288,7 +289,7 @@ export default function AdminProperties() {
         onConfirm={async () => {
           if (!deleting) return;
           await deleteProperty(deleting._id);
-          toast.success(`${deleting.name} deleted.`);
+          notifyDeleted("Property", deleting.name);
           if (items.length === 1 && page > 1) setPage(page - 1);
           else result.reload();
         }}

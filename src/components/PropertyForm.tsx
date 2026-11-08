@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { notifyCreated, notifyUpdated } from "@/lib/notify";
 import { ApiError } from "@/lib/api";
 import { createProperty, propertyCategories, updateProperty } from "@/lib/properties";
 import type {
@@ -169,11 +170,14 @@ function PropertyFormBody({
       const saved = property
         ? await updateProperty(property._id, input)
         : await createProperty({ ...input, status: status ?? "draft" });
-      toast.success(
-        property
-          ? `${saved.name} updated.`
-          : `${saved.name} created as ${saved.status === "published" ? "a published listing" : "a draft"}.`,
-      );
+      const item = {
+        kind: "Property" as const,
+        name: saved.name,
+        status: saved.status,
+        href: `/properties/${saved.slug}`,
+      };
+      if (property) notifyUpdated(item);
+      else notifyCreated(item);
       onSaved(saved);
     } catch (error) {
       if (error instanceof ApiError && error.status === 409 && /reference/i.test(error.message)) {

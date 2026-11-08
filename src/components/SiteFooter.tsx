@@ -1,6 +1,5 @@
 import logo from "@/assets/silverfox-logo.jpg";
-import { ArrowUpRight, MessageCircle, Music2 } from "lucide-react";
-import { tiktokUrl, whatsappUrl } from "@/lib/contact";
+import { SocialLinks } from "./SocialIcons";
 
 export default function SiteFooter() {
   return (
@@ -13,29 +12,10 @@ export default function SiteFooter() {
           <p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">
             Professional property care for owners and residents.
           </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <a
-              href={whatsappUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm font-semibold hover:bg-secondary"
-            >
-              <MessageCircle className="size-4" aria-hidden="true" />
-              WhatsApp
-              <ArrowUpRight className="size-3" aria-hidden="true" />
-            </a>
-            <a
-              href={tiktokUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Silverfox on TikTok: @realestatewithfox"
-              className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm font-semibold hover:bg-secondary"
-            >
-              <Music2 className="size-4" aria-hidden="true" />
-              TikTok
-              <ArrowUpRight className="size-3" aria-hidden="true" />
-            </a>
-          </div>
+          <p className="mb-3 mt-6 text-xs font-semibold uppercase tracking-wider text-primary">
+            Follow Silverfox
+          </p>
+          <SocialLinks />
         </div>
         <nav
           aria-label="Footer navigation"

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { notifyCreated, notifyUpdated } from "@/lib/notify";
 import { createService, serviceIcons, updateService } from "@/lib/services";
 import { plainText } from "@/lib/rich-text";
 import type {
@@ -114,11 +115,14 @@ function ServiceFormBody({
       const saved = service
         ? await updateService(service._id, input)
         : await createService({ ...input, status: status ?? "draft" });
-      toast.success(
-        service
-          ? `${saved.title} updated.`
-          : `${saved.title} created as ${saved.status === "published" ? "a published service" : "a draft"}.`,
-      );
+      const item = {
+        kind: "Service" as const,
+        name: saved.title,
+        status: saved.status,
+        href: "/#management",
+      };
+      if (service) notifyUpdated(item);
+      else notifyCreated(item);
       onSaved(saved);
     } catch (error) {
       form.handle(error);

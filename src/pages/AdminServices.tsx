@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { ArrowDown, ArrowUp, ArrowUpRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { notifyDeleted, notifyStatusChanged } from "@/lib/notify";
 import {
   deleteService,
   getServiceCategories,
@@ -92,11 +93,12 @@ export default function AdminServices() {
     setWorking(service._id);
     try {
       const saved = await toggleServicePublish(service._id);
-      toast.success(
-        saved.status === "published"
-          ? `${saved.title} is now shown on the website.`
-          : `${saved.title} moved to drafts and hidden from the website.`,
-      );
+      notifyStatusChanged({
+        kind: "Service",
+        name: saved.title,
+        status: saved.status,
+        href: "/#management",
+      });
       result.reload();
     } catch (error) {
       reportError(error);
@@ -307,7 +309,7 @@ export default function AdminServices() {
         onConfirm={async () => {
           if (!deleting) return;
           await deleteService(deleting._id);
-          toast.success(`${deleting.title} deleted.`);
+          notifyDeleted("Service", deleting.title);
           result.reload();
         }}
       />
@@ -340,7 +342,9 @@ function CategoryForm({
     setBusy(true);
     try {
       const saved = await updateServiceCategory(category.number, { title, description });
-      toast.success("Category updated.");
+      toast.success("Category updated", {
+        description: `“${saved.title}” heading and introduction are saved.`,
+      });
       onSaved(saved);
     } catch (error) {
       form.handle(error);

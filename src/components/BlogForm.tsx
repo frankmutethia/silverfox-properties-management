@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { notifyCreated, notifyUpdated } from "@/lib/notify";
 import {
   ARTICLE_MAX_IMAGES,
   ARTICLE_MAX_TEXT,
@@ -95,6 +96,7 @@ function BlogFormBody({
   const [content, setContent] = useState(post?.content ?? "");
   const [cover, setCover] = useState<ApiImage | null>(post?.coverImage ?? null);
   const [uploading, setUploading] = useState(false);
+  const summaryHintId = useId();
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -134,11 +136,14 @@ function BlogFormBody({
       const saved = post
         ? await updatePost(post._id, input)
         : await createPost({ ...input, status: status ?? "draft" });
-      toast.success(
-        post
-          ? `“${saved.title}” updated.`
-          : `“${saved.title}” created as ${saved.status === "published" ? "a published article" : "a draft"}.`,
-      );
+      const item = {
+        kind: "Article" as const,
+        name: saved.title,
+        status: saved.status,
+        href: `/blogs/${saved.slug}`,
+      };
+      if (post) notifyUpdated(item);
+      else notifyCreated(item);
       onSaved(saved);
     } catch (error) {
       form.handle(error);
@@ -162,33 +167,37 @@ function BlogFormBody({
         />
         <FieldError form={form} name="title" />
       </label>
-      <div className="grid gap-4 sm:grid-cols-[1fr_2fr]">
-        <label className="block text-sm font-medium">
-          Category
-          <input
-            name="category"
-            maxLength={80}
-            defaultValue={post?.category ?? ""}
-            placeholder="e.g. Property care"
-            className="admin-input mt-2"
-            {...form.describe("category")}
-          />
-          <FieldError form={form} name="category" />
-        </label>
-        <label className="block text-sm font-medium">
-          Summary
-          <textarea
-            name="excerpt"
-            maxLength={400}
-            rows={2}
-            defaultValue={post?.excerpt ?? ""}
-            placeholder="Shown on article cards. Leave blank to use the opening of the article."
-            className="admin-input mt-2"
-            {...form.describe("excerpt")}
-          />
-          <FieldError form={form} name="excerpt" />
-        </label>
-      </div>
+      <label className="block text-sm font-medium sm:max-w-md">
+        Category
+        <input
+          name="category"
+          maxLength={80}
+          defaultValue={post?.category ?? ""}
+          placeholder="e.g. Property care"
+          className="admin-input mt-2"
+          {...form.describe("category")}
+        />
+        <FieldError form={form} name="category" />
+      </label>
+      <label className="block text-sm font-medium">
+        Summary
+        <textarea
+          name="excerpt"
+          maxLength={400}
+          rows={3}
+          defaultValue={post?.excerpt ?? ""}
+          className="admin-input mt-2 resize-y"
+          {...form.describe("excerpt")}
+          aria-describedby={[summaryHintId, form.describe("excerpt")["aria-describedby"]]
+            .filter(Boolean)
+            .join(" ")}
+        />
+        <span id={summaryHintId} className="mt-1.5 block text-xs font-normal text-muted-foreground">
+          Shown on article cards, up to 400 characters. Leave blank to use the opening of the
+          article.
+        </span>
+        <FieldError form={form} name="excerpt" />
+      </label>
       <ImageField
         label="Cover image (optional)"
         folder="blog"

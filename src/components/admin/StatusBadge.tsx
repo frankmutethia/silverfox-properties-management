@@ -7,12 +7,19 @@ const styles: Record<TestimonialStatus, string> = {
   pending: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
 };
 
-export default function StatusBadge({ status }: { status: TestimonialStatus }) {
+export default function StatusBadge({
+  status,
+  label,
+}: {
+  status: TestimonialStatus;
+  /** Overrides the default wording, e.g. "Active". */
+  label?: string;
+}) {
   return (
     <span
       className={`inline-flex whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-semibold ${styles[status]}`}
     >
-      {testimonialStatusLabels[status]}
+      {label ?? testimonialStatusLabels[status]}
     </span>
   );
 }

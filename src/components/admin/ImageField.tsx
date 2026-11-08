@@ -17,6 +17,7 @@ export default function ImageField({
   onBusyChange,
   altLabel = "Image description",
   altRequired = true,
+  describe = true,
   error,
   errorId,
 }: {
@@ -27,6 +28,8 @@ export default function ImageField({
   onBusyChange?: (busy: boolean) => void;
   altLabel?: string;
   altRequired?: boolean;
+  /** Show the alt-text input. Off for images whose description is generated (profile photo). */
+  describe?: boolean;
   error?: string | undefined;
   errorId?: string;
 }) {
@@ -84,24 +87,28 @@ export default function ImageField({
             alt={value.alt || "Selected image preview"}
             className="h-24 w-32 rounded object-cover"
           />
-          <label className="min-w-0 flex-1 text-sm font-medium">
-            {altLabel}
-            {altRequired && " *"}
-            <input
-              required={altRequired}
-              maxLength={150}
-              value={value.alt}
-              aria-invalid={error ? true : undefined}
-              aria-describedby={error ? errorId : undefined}
-              className="admin-input mt-2"
-              onChange={(event) => onChange({ ...value, alt: event.target.value })}
-            />
-            {error && (
-              <span id={errorId} className="mt-1.5 block text-xs font-normal text-destructive">
-                {error}
-              </span>
-            )}
-          </label>
+          {describe ? (
+            <label className="min-w-0 flex-1 text-sm font-medium">
+              {altLabel}
+              {altRequired && " *"}
+              <input
+                required={altRequired}
+                maxLength={150}
+                value={value.alt}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? errorId : undefined}
+                className="admin-input mt-2"
+                onChange={(event) => onChange({ ...value, alt: event.target.value })}
+              />
+              {error && (
+                <span id={errorId} className="mt-1.5 block text-xs font-normal text-destructive">
+                  {error}
+                </span>
+              )}
+            </label>
+          ) : (
+            <span className="flex-1" aria-hidden="true" />
+          )}
           <Button
             type="button"
             variant="ghost"

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { KeyRound, Save, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import avatar from "@/assets/staff-avatar.svg";
@@ -8,6 +8,7 @@ import { useFieldErrors } from "@/lib/form-errors";
 import { Button } from "@/components/ui/button";
 import FieldError from "@/components/admin/FieldError";
 import ImageField from "@/components/admin/ImageField";
+import PasswordInput from "@/components/PasswordInput";
 
 export default function AdminProfile({
   user,
@@ -76,10 +77,12 @@ function ProfileForm({ user, onSave }: { user: ApiUser; onSave: (user: ApiUser) 
         photo: photo && {
           url: photo.url,
           publicId: photo.publicId,
-          alt: photo.alt.trim() || `Photo of ${name}`,
+          alt: `Photo of ${name}`,
         },
       });
-      toast.success("Profile saved.");
+      toast.success("Profile saved", {
+        description: "Your display name and contact details are updated.",
+      });
       onSave(saved);
     } catch (error) {
       form.handle(error);
@@ -145,10 +148,7 @@ function ProfileForm({ user, onSave }: { user: ApiUser; onSave: (user: ApiUser) 
           value={photo}
           onChange={setPhoto}
           onBusyChange={setUploading}
-          altLabel="Photo description"
-          altRequired={false}
-          error={form.errors["photo"]}
-          errorId={form.messageId("photo")}
+          describe={false}
         />
       </div>
       <div className="mt-6 flex flex-wrap justify-end gap-3">
@@ -164,6 +164,7 @@ function ProfileForm({ user, onSave }: { user: ApiUser; onSave: (user: ApiUser) 
 function PasswordForm() {
   const form = useFieldErrors(["currentPassword", "newPassword", "confirmPassword"]);
   const [busy, setBusy] = useState(false);
+  const ids = useId();
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -184,9 +185,10 @@ function PasswordForm() {
     if (Object.keys(problems).length) return;
     setBusy(true);
     try {
-      toast.success(
-        `${await changePassword(input)}. Other devices have been signed out; this one stays signed in.`,
-      );
+      await changePassword(input);
+      toast.success("Password changed", {
+        description: "Other devices have been signed out. This one stays signed in.",
+      });
       element.reset();
     } catch (error) {
       // "Current password is incorrect" has no field prefix, so place it explicitly.
@@ -199,18 +201,19 @@ function PasswordForm() {
   }
 
   const field = (name: string, label: string, autoComplete: string) => (
-    <label className="text-sm font-medium">
-      {label}
-      <input
+    <div className="text-sm font-medium">
+      <label htmlFor={`${ids}-${name}`}>{label}</label>
+      <PasswordInput
+        id={`${ids}-${name}`}
         name={name}
-        type="password"
+        label={label}
         autoComplete={autoComplete}
-        maxLength={200}
-        className="admin-input mt-2"
+        required={false}
+        className="mt-2"
         {...form.describe(name)}
       />
       <FieldError form={form} name={name} />
-    </label>
+    </div>
   );
 
   return (

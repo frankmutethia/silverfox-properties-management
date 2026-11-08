@@ -18,7 +18,7 @@ import StatusBadge from "@/components/admin/StatusBadge";
 const date = (value: string) =>
   new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" }).format(new Date(value));
 
-export default function AdminDashboard({ user }: { user: ApiUser }) {
+export default function AdminDashboard({ user }: { user: ApiUser | null }) {
   const result = useQuery((signal) => getDashboard(signal), []);
   const data = result.data;
   return (
@@ -34,7 +34,7 @@ export default function AdminDashboard({ user }: { user: ApiUser }) {
             }).format(new Date())}
           </p>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Welcome back, {user.name}
+            Welcome back{user ? `, ${user.name}` : ""}
             <span className="text-accent">.</span>
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">

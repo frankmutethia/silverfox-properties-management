@@ -133,7 +133,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       {page}
-      <Toaster position="top-center" richColors closeButton />
+      <Toaster position="bottom-right" closeButton duration={6000} />
     </ErrorBoundary>
   );
 }
