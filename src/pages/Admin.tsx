@@ -29,6 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import logo from "@/assets/silverfox-logo.jpg";
 import avatar from "@/assets/staff-avatar.svg";
 import ThemeToggle from "@/components/ThemeToggle";
+import WorkspaceTour from "@/components/admin/WorkspaceTour";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -148,6 +149,29 @@ function AdminShell({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [touring, setTouring] = useState(false);
+  const tourKey = user ? `silverfox-tour-done:${user._id}` : null;
+
+  // First visit on this device: start the tour once the account is known.
+  useEffect(() => {
+    if (!tourKey) return;
+    let seen = true;
+    try {
+      seen = localStorage.getItem(tourKey) === "1";
+    } catch {
+      /* Storage is optional; without it the tour stays on the Help button. */
+    }
+    if (!seen) setTouring(true);
+  }, [tourKey]);
+  function closeTour() {
+    setTouring(false);
+    if (!tourKey) return;
+    try {
+      localStorage.setItem(tourKey, "1");
+    } catch {
+      /* Storage is optional. */
+    }
+  }
   const current = navigation.find((item) => item.href === path);
   const title = current?.label ?? "Page not found";
   useEffect(() => {
@@ -161,6 +185,7 @@ function AdminShell({
           <a
             key={href}
             href={href}
+            data-tour={`nav-${href}`}
             title={compact ? label : undefined}
             aria-label={compact ? label : undefined}
             aria-current={path === href ? "page" : undefined}
@@ -200,28 +225,30 @@ function AdminShell({
           )}
           {links(collapsed)}
         </div>
-        <a
-          href="/"
-          title="View website"
-          className="flex h-16 items-center justify-center gap-3 border-t border-border text-sm text-muted-foreground hover:text-primary"
-        >
-          <Globe className="size-4" />
-          {!collapsed && (
-            <>
-              View website <ArrowUpRight className="size-4" />
-            </>
-          )}
-        </a>
-        <button
-          type="button"
-          onClick={() => void signOut()}
-          aria-label="Sign out"
-          title="Sign out"
-          className="flex h-14 shrink-0 items-center justify-center gap-3 border-t border-border text-sm text-destructive hover:bg-secondary"
-        >
-          <LogOut className="size-4" />
-          {!collapsed && "Sign out"}
-        </button>
+        <div data-tour="sidebar-footer" className="flex flex-col">
+          <a
+            href="/"
+            title="View website"
+            className="flex h-16 items-center justify-center gap-3 border-t border-border text-sm text-muted-foreground hover:text-primary"
+          >
+            <Globe className="size-4" />
+            {!collapsed && (
+              <>
+                View website <ArrowUpRight className="size-4" />
+              </>
+            )}
+          </a>
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            aria-label="Sign out"
+            title="Sign out"
+            className="flex h-14 shrink-0 items-center justify-center gap-3 border-t border-border text-sm text-destructive hover:bg-secondary"
+          >
+            <LogOut className="size-4" />
+            {!collapsed && "Sign out"}
+          </button>
+        </div>
       </aside>
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-30 flex h-20 items-center justify-between gap-3 border-b border-border bg-card/95 px-4 backdrop-blur-xl sm:px-8">
@@ -230,6 +257,7 @@ function AdminShell({
               variant="ghost"
               size="icon"
               className="hidden lg:inline-flex"
+              data-tour="sidebar-toggle"
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               aria-expanded={!collapsed}
               onClick={() => setCollapsed(!collapsed)}
@@ -238,7 +266,13 @@ function AdminShell({
             </Button>
             <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open sidebar">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="lg:hidden"
+                  aria-label="Open sidebar"
+                  data-tour="menu"
+                >
                   <PanelLeftOpen />
                 </Button>
               </DialogTrigger>
@@ -264,43 +298,24 @@ function AdminShell({
             <span className="truncate text-sm font-semibold">{title}</span>
           </div>
           <div className="flex items-center gap-1 sm:gap-3">
-            <ThemeToggle />
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Help and support">
-                  <CircleHelp />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-lg">
-                <DialogTitle>A little help, whenever you need it.</DialogTitle>
-                <DialogDescription>Your guide to the Silverfox workspace.</DialogDescription>
-                <div className="space-y-4 text-sm leading-6">
-                  <p>
-                    <strong>Drafts and publishing:</strong> new properties, services, articles and
-                    testimonials start as drafts. Only published items appear on the website. Use
-                    Publish or Unpublish to switch.
-                  </p>
-                  <p>
-                    <strong>Photos:</strong> JPG, PNG or WebP up to 5 MB. Describe every photo so
-                    the website stays accessible. A property needs at least one photo before it can
-                    be published.
-                  </p>
-                  <p>
-                    <strong>Testimonials:</strong> visitor feedback arrives as Pending review.
-                    Publish it, or delete it to reject it.
-                  </p>
-                  <Button asChild>
-                    <a href="mailto:Info@silverfoxpropertymanagement.co.ke">
-                      Contact support <ArrowUpRight />
-                    </a>
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <span data-tour="theme" className="inline-flex rounded-md">
+              <ThemeToggle />
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Help: take the workspace tour"
+              title="Help"
+              data-tour="help"
+              onClick={() => setTouring(true)}
+            >
+              <CircleHelp />
+            </Button>
             <div className="ml-1 border-l border-border pl-3 sm:pl-5">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
+                    data-tour="profile"
                     aria-label="Open your profile menu"
                     className="flex items-center gap-3 rounded-lg text-left"
                   >
@@ -379,6 +394,7 @@ function AdminShell({
           <span>Staff workspace</span>
         </footer>
       </div>
+      <WorkspaceTour open={touring} onClose={closeTour} />
     </div>
   );
 }
