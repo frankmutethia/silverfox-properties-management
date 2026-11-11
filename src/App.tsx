@@ -2,6 +2,7 @@ import { Component, useEffect, type ErrorInfo, type ReactNode } from "react";
 import Home from "./pages/Home";
 import BlogDetail from "./pages/BlogDetail";
 import PropertyDetail from "./pages/PropertyDetail";
+import ServiceDetail from "./pages/ServiceDetail";
 import SiteHeader from "./components/SiteHeader";
 import SiteFooter from "./components/SiteFooter";
 import StaffLogin from "./pages/StaffLogin";
@@ -12,6 +13,8 @@ import { Toaster } from "./components/ui/sonner";
 import { Skeleton } from "./components/ui/skeleton";
 import { getPropertyBySlug } from "./lib/properties";
 import { getPostBySlug } from "./lib/blog";
+import { getPublishedServices, serviceIdFrom } from "./lib/services";
+import { withPhotos } from "./lib/service-photos";
 import { useQuery } from "./lib/use-query";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -92,10 +95,33 @@ function ArticleRoute({ slug }: { slug: string }) {
   return <DetailLoading />;
 }
 
+function ServiceRoute({ id }: { id: string }) {
+  // The public list carries every published service in full, so the page reads from it.
+  const result = useQuery((signal) => getPublishedServices(signal), []);
+  if (result.data) {
+    const cards = withPhotos(result.data);
+    const card = cards.find((item) => item.service._id === id);
+    if (!card) return <NotFoundPage />;
+    return <ServiceDetail card={card} others={cards.filter((item) => item !== card)} />;
+  }
+  if (result.error)
+    return (
+      <main id="main-content" className="mx-auto max-w-6xl px-5 py-16">
+        <LoadError error={result.error} onRetry={result.reload} />
+      </main>
+    );
+  return <DetailLoading />;
+}
+
 function PublicPage({ pathname }: { pathname: string }) {
   if (pathname === "/") return <Home />;
   const propertySlug = slugFrom(pathname, "properties");
   if (propertySlug) return <PropertyRoute slug={propertySlug} />;
+  const serviceSegment = slugFrom(pathname, "services");
+  if (serviceSegment) {
+    const id = serviceIdFrom(serviceSegment);
+    return id ? <ServiceRoute id={id} /> : <NotFoundPage />;
+  }
   const articleSlug = slugFrom(pathname, "blogs");
   if (articleSlug) return <ArticleRoute slug={articleSlug} />;
   return <NotFoundPage />;

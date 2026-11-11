@@ -4,7 +4,16 @@ import { useFieldErrors } from "@/lib/form-errors";
 import { Button } from "@/components/ui/button";
 import FieldError from "@/components/admin/FieldError";
 
-export default function Enquiries() {
+/** The public enquiry form. Service pages pass their own heading and a prefilled message. */
+export default function Enquiries({
+  heading = "How can we help?",
+  intro = "Tell us about the property or service you have in mind. Our team will review your message.",
+  defaultMessage = "",
+}: {
+  heading?: string;
+  intro?: string;
+  defaultMessage?: string;
+}) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const formErrors = useFieldErrors(["name", "message"]);
@@ -13,7 +22,6 @@ export default function Enquiries() {
     if (busy) return;
     const form = event.currentTarget;
     const data = new FormData(form);
-    setBusy(true);
     setNotice("");
     const name = String(data.get("name") ?? "").trim();
     const message = String(data.get("message") ?? "").trim();
@@ -22,6 +30,7 @@ export default function Enquiries() {
     if (!message) problems["message"] = "Enter your enquiry.";
     formErrors.setErrors(problems);
     if (Object.keys(problems).length) return;
+    setBusy(true);
     try {
       const result = await submitEnquiry({ name, message });
       form.reset();
@@ -38,11 +47,8 @@ export default function Enquiries() {
       <div className="mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-2 lg:px-8">
         <div>
           <p className="mb-4 text-xs font-bold uppercase tracking-widest text-accent">Enquiries</p>
-          <h2 className="text-4xl font-bold tracking-tight text-primary">How can we help?</h2>
-          <p className="mt-5 max-w-md leading-7 text-muted-foreground">
-            Tell us about the property or service you have in mind. Our team will review your
-            message.
-          </p>
+          <h2 className="text-4xl font-bold tracking-tight text-primary">{heading}</h2>
+          <p className="mt-5 max-w-md leading-7 text-muted-foreground">{intro}</p>
         </div>
         <form
           onSubmit={submit}
@@ -69,6 +75,7 @@ export default function Enquiries() {
               rows={6}
               className="admin-input mt-2"
               placeholder="What would you like to know?"
+              defaultValue={defaultMessage}
               {...formErrors.describe("message")}
             />
             <FieldError form={formErrors} name="message" />

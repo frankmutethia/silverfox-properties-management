@@ -7,3 +7,7 @@ export function whatsappUrl(
 ) {
   return `https://wa.me/254701507570?text=${encodeURIComponent(message)}`;
 }
+
+export const phoneDisplay = "0701 507570";
+export const phoneHref = "tel:+254701507570";
+export const contactEmail = "Info@silverfoxpropertymanagement.co.ke";
