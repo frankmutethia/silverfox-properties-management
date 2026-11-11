@@ -22,15 +22,19 @@ export default function Home() {
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(0,29,53,0.55)_0%,rgba(0,29,53,0.15)_22%,rgba(0,29,53,0.35)_55%,rgba(0,29,53,0.85)_100%)] sm:bg-[linear-gradient(180deg,rgba(0,29,53,0.5)_0%,rgba(0,29,53,0)_20%),linear-gradient(90deg,rgba(0,29,53,0.82)_0%,rgba(0,29,53,0.5)_40%,rgba(0,29,53,0.05)_68%)]"
+          className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(0,29,53,0.4)_0%,rgba(0,29,53,0)_20%,rgba(0,29,53,0.1)_50%,rgba(0,29,53,0.7)_100%)] sm:bg-[linear-gradient(180deg,rgba(0,29,53,0.35)_0%,rgba(0,29,53,0)_16%),linear-gradient(90deg,rgba(0,29,53,0.62)_0%,rgba(0,29,53,0.28)_34%,rgba(0,29,53,0)_52%)]"
         />
         <div className="mx-auto flex h-[100svh] max-h-[920px] min-h-[620px] max-w-7xl items-end px-5 pb-[11vh] pt-28 lg:px-8">
-          <div className="max-w-2xl">
-            <h1 className="text-5xl font-bold leading-[1.02] tracking-[-.045em] text-white sm:text-7xl lg:text-[5.5rem]">
+          <div className="max-w-3xl">
+            <h1 className="text-[2.6rem] font-bold leading-[1.04] tracking-[-.045em] text-white [text-shadow:0_2px_24px_rgba(0,20,40,0.45)] sm:text-6xl lg:text-[4.25rem]">
               Welcome to
-              <span className="block text-accent">Silverfox</span>
+              <span className="block text-accent">
+                Silverfox
+                <br />
+                Property Management
+              </span>
             </h1>
-            <p className="mt-6 max-w-xl text-base leading-7 text-white/90 sm:text-lg sm:leading-8">
+            <p className="mt-6 max-w-xl text-base leading-7 text-white [text-shadow:0_1px_12px_rgba(0,20,40,0.6)] sm:text-lg sm:leading-8">
               Your property partner in Kenya. We help buyers, sellers and owners{" "}
               <strong className="font-semibold text-white">
                 find, buy, sell and manage property
