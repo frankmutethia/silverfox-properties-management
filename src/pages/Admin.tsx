@@ -20,6 +20,7 @@ import {
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProperties from "@/pages/AdminProperties";
 import AdminServices from "@/pages/AdminServices";
+import AdminEnquiries from "@/pages/AdminEnquiries";
 import AdminBlogs from "@/pages/AdminBlogs";
 import AdminProfile from "@/pages/AdminProfile";
 import AdminTestimonials from "@/pages/AdminTestimonials";
@@ -55,6 +56,7 @@ const navigation = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Properties", href: "/admin/properties", icon: Building2 },
   { label: "Services", href: "/admin/services", icon: BriefcaseBusiness },
+  { label: "Enquiries", href: "/admin/enquiries", icon: MessageSquareQuote },
   { label: "Blogs", href: "/admin/blogs", icon: FileText },
   { label: "Testimonials", href: "/admin/testimonials", icon: MessageSquareQuote },
   { label: "User Management", href: "/admin/users", icon: UsersRound },
@@ -368,6 +370,8 @@ function AdminShell({
             <AdminProperties />
           ) : path === "/admin/services" ? (
             <AdminServices />
+          ) : path === "/admin/enquiries" ? (
+            <AdminEnquiries />
           ) : path === "/admin/blogs" ? (
             <AdminBlogs />
           ) : path === "/admin/profile" ? (

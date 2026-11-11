@@ -96,7 +96,7 @@ export interface PropertyInput {
   status?: PublicationStatus;
 }
 
-export type ServiceCategoryNumber = "01" | "02";
+export type ServiceCategoryNumber = string;
 
 export interface ApiServiceCategory {
   _id: string;
@@ -133,6 +133,22 @@ export interface ServiceInput {
   icon: string | null;
   image: ApiImage | null;
   status?: PublicationStatus;
+}
+
+export type EnquiryEmailStatus = "pending" | "sent" | "failed";
+
+export interface ApiEnquiry {
+  _id: string;
+  name: string;
+  message: string;
+  emailStatus: EnquiryEmailStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EnquiryInput {
+  name: string;
+  message: string;
 }
 
 export interface ApiPost {

@@ -3,7 +3,9 @@ import type { Paginated, Pagination, UploadedImage } from "./types";
 // Client for the Silverfox API. The session lives in an httpOnly cookie, so every
 // request is sent with credentials and no token is ever read or stored in JS.
 
-const baseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
+function apiBaseUrl() {
+  return (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
+}
 
 export class ApiError extends Error {
   readonly status: number;
@@ -44,6 +46,7 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
 export type Query = Record<string, string | number | boolean | null | undefined>;
 
 function buildUrl(path: string, query?: Query) {
+  const baseUrl = apiBaseUrl();
   if (!baseUrl) throw new ApiError(0, "The API address (VITE_API_BASE_URL) is not configured.");
   const url = new URL(baseUrl + path);
   for (const [key, value] of Object.entries(query ?? {})) {

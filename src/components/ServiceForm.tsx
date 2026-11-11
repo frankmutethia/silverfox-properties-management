@@ -6,7 +6,6 @@ import { plainText } from "@/lib/rich-text";
 import type {
   ApiImage,
   ApiService,
-  ApiServiceCategory,
   PublicationStatus,
   ServiceCategoryNumber,
   ServiceInput,
@@ -23,15 +22,11 @@ const MAX_TEXT = 10_000;
 /** Create or edit a service. `service` null = create. */
 export default function ServiceForm({
   service,
-  categories,
-  defaultCategory,
   open,
   onOpenChange,
   onSaved,
 }: {
   service: ApiService | null;
-  categories: ApiServiceCategory[];
-  defaultCategory: ServiceCategoryNumber;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: (service: ApiService) => void;
@@ -42,13 +37,11 @@ export default function ServiceForm({
       <DialogContent className="max-h-[90dvh] max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-3xl">
         <DialogTitle>{service ? "Edit service" : "Create service"}</DialogTitle>
         <DialogDescription>
-          Fields marked * are required. New services are added at the end of their category.
+          Add one service with a title and description. Category and service image are optional.
         </DialogDescription>
         <ServiceFormBody
           key={service?._id ?? "new"}
           service={service}
-          categories={categories}
-          defaultCategory={defaultCategory}
           busy={busy}
           setBusy={setBusy}
           onCancel={() => onOpenChange(false)}
@@ -64,16 +57,12 @@ export default function ServiceForm({
 
 function ServiceFormBody({
   service,
-  categories,
-  defaultCategory,
   busy,
   setBusy,
   onCancel,
   onSaved,
 }: {
   service: ApiService | null;
-  categories: ApiServiceCategory[];
-  defaultCategory: ServiceCategoryNumber;
   busy: boolean;
   setBusy: (busy: boolean) => void;
   onCancel: () => void;
@@ -148,19 +137,15 @@ function ServiceFormBody({
           <FieldError form={form} name="title" />
         </label>
         <label className="text-sm font-medium">
-          Service category *
-          <select
+          Category (optional)
+          <input
             name="category"
-            defaultValue={service?.category ?? defaultCategory}
+            maxLength={150}
+            placeholder="e.g. Property management"
+            defaultValue={service?.category ?? ""}
             className="admin-input mt-2"
             {...form.describe("category")}
-          >
-            {categories.map((category) => (
-              <option key={category.number} value={category.number}>
-                {category.title}
-              </option>
-            ))}
-          </select>
+          />
           <FieldError form={form} name="category" />
         </label>
         <label className="text-sm font-medium">
@@ -185,6 +170,8 @@ function ServiceFormBody({
         </label>
       </div>
       <ServiceEditor
+        imageFolder="services"
+        onBusy={setUploading}
         label="Description"
         initialHtml={service?.description ?? ""}
         onChange={setDescription}

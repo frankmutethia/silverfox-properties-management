@@ -9,6 +9,9 @@ lerna-debug.log*
 
 node_modules
 dist
+
+# The API lives in its own repository
+backend-silverfox-properties-management/
 dist-ssr
 .output
 .vinxi

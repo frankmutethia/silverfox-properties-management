@@ -12,36 +12,37 @@ import { Button } from "@/components/ui/button";
 import kitchen from "@/assets/aaron-huber-G7sE2S4Lab4-unsplash.jpg";
 import living from "@/assets/spacejoy-IH7wPsjwomc-unsplash.jpg";
 import view from "@/assets/infinite-views-79NjpXDOJU8-unsplash.jpg";
-import hero from "@/assets/tu-n-123-69K2AGQc_Yw-unsplash.jpg";
+import hero from "@/assets/infinite-views-79NjpXDOJU8-unsplash.jpg";
 import PropertyListings from "@/components/PropertyListings";
 import { whatsappUrl } from "@/lib/contact";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import BlogSection from "@/components/BlogSection";
 import Testimonials from "@/components/Testimonials";
 import ServicesSection from "@/components/ServicesSection";
+import Enquiries from "@/components/Enquiries";
 
 export default function Home() {
   return (
     <main id="main-content" className="min-h-screen bg-background font-sans text-foreground">
       <header
         id="top"
-        className="relative overflow-hidden bg-brand-surface text-brand-surface-foreground"
+        className="relative mx-3 my-3 overflow-hidden rounded-2xl bg-brand-surface text-brand-surface-foreground sm:mx-5"
       >
         <img
           src={hero}
-          alt="Property professionals completing a real estate transaction beside a model home"
+          alt="Contemporary residence with expansive windows overlooking the city"
           fetchPriority="high"
           className="absolute inset-0 h-full w-full object-cover object-[58%_50%] sm:object-[55%_50%] lg:object-center"
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,29,53,0.90)_0%,rgba(0,29,53,0.68)_38%,rgba(0,29,53,0.12)_72%,transparent_100%)] max-sm:bg-[linear-gradient(90deg,rgba(0,29,53,0.88),rgba(0,29,53,0.45))]"
+          className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,29,53,0.82)_0%,rgba(0,29,53,0.55)_45%,rgba(0,29,53,0.08)_100%)]"
         />
         <div className="relative mx-auto flex min-h-[480px] max-w-7xl items-center px-5 py-16 sm:min-h-[540px] lg:min-h-[580px] lg:px-8">
           <div className="max-w-lg">
             <h1 className="text-5xl font-semibold leading-[1.08] tracking-[-.04em] text-white sm:text-6xl lg:text-7xl">
-              Your property.
-              <span className="block">Our priority.</span>
+              Exceptional spaces.
+              <span className="block text-cyan-200">Personal service.</span>
             </h1>
             <p className="mt-6 max-w-sm text-base leading-7 text-white/95 sm:text-lg">
               Buy, sell and manage property with a team you can rely on.
@@ -100,9 +101,9 @@ export default function Home() {
         </div>
       </div>
 
-      <PropertyListings />
-
       <ServicesSection />
+      <PropertyListings />
+      <Enquiries />
       <BlogSection />
       <Testimonials />
 

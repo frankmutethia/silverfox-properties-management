@@ -1,62 +1,47 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpRight, Pencil, Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
 import { notifyDeleted, notifyStatusChanged } from "@/lib/notify";
 import {
   deleteService,
-  getServiceCategories,
   listAllAdminServices,
   reorderServices,
   serviceIcon,
   toggleServicePublish,
-  updateServiceCategory,
 } from "@/lib/services";
 import { richTextClass } from "@/lib/rich-text";
-import type {
-  ApiService,
-  ApiServiceCategory,
-  PublicationStatus,
-  ServiceCategoryNumber,
-} from "@/lib/types";
+import type { ApiService, PublicationStatus } from "@/lib/types";
 import { reportError, useQuery } from "@/lib/use-query";
-import { useFieldErrors } from "@/lib/form-errors";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import ServiceForm from "@/components/ServiceForm";
 import RichText from "@/components/RichText";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
-import FieldError from "@/components/admin/FieldError";
 import StatusBadge, { StatusFilter } from "@/components/admin/StatusBadge";
 import { LineSkeletons, LoadError } from "@/components/QueryState";
 
 type StatusOption = "all" | PublicationStatus;
 
 async function loadServices(signal: AbortSignal) {
-  const [categories, services] = await Promise.all([
-    getServiceCategories(signal),
-    listAllAdminServices({}, signal),
-  ]);
-  return { categories, services };
+  return listAllAdminServices({}, signal);
 }
 
 export default function AdminServices() {
   const result = useQuery((signal) => loadServices(signal), []);
   const [status, setStatus] = useState<StatusOption>("all");
   const [editing, setEditing] = useState<ApiService | null>(null);
-  const [formCategory, setFormCategory] = useState<ServiceCategoryNumber>("01");
   const [formOpen, setFormOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<ApiServiceCategory | null>(null);
   const [deleting, setDeleting] = useState<ApiService | null>(null);
   const [working, setWorking] = useState<string | null>(null);
-  const categories = result.data?.categories ?? [];
-  const services = result.data?.services ?? [];
+  const categories = [
+    { number: "", title: "All services", description: "Create and manage individual services." },
+  ];
+  const services = result.data ?? [];
   const inCategory = (number: string) =>
     services
-      .filter((service) => service.category === number)
+      .filter((service) => number === "" || service.category === number)
       .sort((a, b) => a.sortOrder - b.sortOrder);
 
   async function move(service: ApiService, step: number) {
-    const group = inCategory(service.category);
+    const group = inCategory("");
     const index = group.findIndex((item) => item._id === service._id);
     const target = index + step;
     if (index < 0 || target < 0 || target >= group.length) return;
@@ -64,19 +49,15 @@ export default function AdminServices() {
     reordered.splice(index, 1);
     reordered.splice(target, 0, service);
     // sortOrder is global, so send every service in category order.
-    const ordered = categories.flatMap((category) =>
-      category.number === service.category ? reordered : inCategory(category.number),
-    );
+    const ordered = reordered;
     const sortOrders = new Map(ordered.map((item, position) => [item._id, position]));
     result.setData(
       (current) =>
-        current && {
-          ...current,
-          services: current.services.map((item) => ({
-            ...item,
-            sortOrder: sortOrders.get(item._id) ?? item.sortOrder,
-          })),
-        },
+        current &&
+        current.map((item) => ({
+          ...item,
+          sortOrder: sortOrders.get(item._id) ?? item.sortOrder,
+        })),
     );
     setWorking(service._id);
     try {
@@ -107,9 +88,8 @@ export default function AdminServices() {
     }
   }
 
-  function openForm(service: ApiService | null, category: ServiceCategoryNumber) {
+  function openForm(service: ApiService | null) {
     setEditing(service);
-    setFormCategory(category);
     setFormOpen(true);
   }
 
@@ -126,15 +106,15 @@ export default function AdminServices() {
               View on website <ArrowUpRight />
             </a>
           </Button>
-          <Button onClick={() => openForm(null, "01")} disabled={!categories.length}>
+          <Button onClick={() => openForm(null)}>
             <Plus />
             Create service
           </Button>
         </div>
       </div>
       <p className="mb-6 mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-        Edit categories and services, and set the order they appear in on the website. Only
-        published services are shown publicly.
+        Create individual services with an optional category. Only published services are shown
+        publicly.
       </p>
       <StatusFilter
         label="Filter by status"
@@ -159,7 +139,7 @@ export default function AdminServices() {
       ) : !result.data && result.error ? (
         <LoadError error={result.error} onRetry={result.reload} className="admin-panel mt-6" />
       ) : (
-        <div className="mt-6 grid items-start gap-6 xl:grid-cols-2">
+        <div className="mt-6 grid items-start gap-6">
           {categories.map((category) => {
             const group = inCategory(category.number);
             const visible = group.filter((item) => status === "all" || item.status === status);
@@ -169,13 +149,8 @@ export default function AdminServices() {
                 <div className="border-b border-border bg-secondary/50 p-6">
                   <div className="flex items-start justify-between gap-3">
                     <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-accent">
-                      Category {category.number} · {published} published ·{" "}
-                      {group.length - published} drafts
+                      {published} published · {group.length - published} drafts
                     </p>
-                    <Button variant="ghost" size="sm" onClick={() => setEditingCategory(category)}>
-                      <Pencil />
-                      Edit category
-                    </Button>
                   </div>
                   <h2 className="text-xl font-semibold">{category.title}</h2>
                   <p className="mt-3 text-sm leading-6 text-muted-foreground">
@@ -205,6 +180,7 @@ export default function AdminServices() {
                               />
                             )}
                             <RichText
+                              images
                               html={service.description}
                               className={`${richTextClass} mt-2 text-muted-foreground`}
                             />
@@ -239,11 +215,7 @@ export default function AdminServices() {
                           >
                             {service.status === "published" ? "Unpublish" : "Publish"}
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openForm(service, service.category)}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => openForm(service)}>
                             <Pencil />
                             Edit
                           </Button>
@@ -263,13 +235,13 @@ export default function AdminServices() {
                 </ol>
                 {!visible.length && (
                   <p className="p-6 text-sm text-muted-foreground">
-                    No {status === "all" ? "" : `${status} `}services in this category.
+                    No {status === "all" ? "" : `${status} `}services to show.
                   </p>
                 )}
                 <div className="border-t border-border p-4">
-                  <Button variant="ghost" size="sm" onClick={() => openForm(null, category.number)}>
+                  <Button variant="ghost" size="sm" onClick={() => openForm(null)}>
                     <Plus />
-                    Add a service to this category
+                    Create service
                   </Button>
                 </div>
               </section>
@@ -279,27 +251,9 @@ export default function AdminServices() {
       )}
       <ServiceForm
         service={editing}
-        categories={categories}
-        defaultCategory={formCategory}
         open={formOpen}
         onOpenChange={setFormOpen}
         onSaved={() => result.reload()}
-      />
-      <CategoryForm
-        category={editingCategory}
-        onClose={() => setEditingCategory(null)}
-        onSaved={(saved) => {
-          result.setData(
-            (current) =>
-              current && {
-                ...current,
-                categories: current.categories.map((item) =>
-                  item.number === saved.number ? saved : item,
-                ),
-              },
-          );
-          setEditingCategory(null);
-        }}
       />
       <ConfirmDialog
         open={deleting !== null}
@@ -314,95 +268,5 @@ export default function AdminServices() {
         }}
       />
     </>
-  );
-}
-
-function CategoryForm({
-  category,
-  onClose,
-  onSaved,
-}: {
-  category: ApiServiceCategory | null;
-  onClose: () => void;
-  onSaved: (category: ApiServiceCategory) => void;
-}) {
-  const form = useFieldErrors(["title", "description"]);
-  const [busy, setBusy] = useState(false);
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!category) return;
-    const data = new FormData(event.currentTarget);
-    const title = String(data.get("title") ?? "").trim();
-    const description = String(data.get("description") ?? "").trim();
-    const problems: Record<string, string> = {};
-    if (!title) problems["title"] = "Enter a category title.";
-    if (!description) problems["description"] = "Enter a short description.";
-    form.setErrors(problems);
-    if (Object.keys(problems).length) return;
-    setBusy(true);
-    try {
-      const saved = await updateServiceCategory(category.number, { title, description });
-      toast.success("Category updated", {
-        description: `“${saved.title}” heading and introduction are saved.`,
-      });
-      onSaved(saved);
-    } catch (error) {
-      form.handle(error);
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <Dialog
-      open={category !== null}
-      onOpenChange={(open) => {
-        if (!open && !busy) {
-          form.clear();
-          onClose();
-        }
-      }}
-    >
-      <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-xl">
-        <DialogTitle>Edit category {category?.number}</DialogTitle>
-        <DialogDescription>
-          The heading and introduction shown above its services.
-        </DialogDescription>
-        <form onSubmit={submit} className="space-y-5" noValidate>
-          <label className="block text-sm font-medium">
-            Title *
-            <input
-              name="title"
-              required
-              maxLength={150}
-              defaultValue={category?.title ?? ""}
-              className="admin-input mt-2"
-              {...form.describe("title")}
-            />
-            <FieldError form={form} name="title" />
-          </label>
-          <label className="block text-sm font-medium">
-            Description *
-            <textarea
-              name="description"
-              required
-              maxLength={1000}
-              rows={4}
-              defaultValue={category?.description ?? ""}
-              className="admin-input mt-2"
-              {...form.describe("description")}
-            />
-            <FieldError form={form} name="description" />
-          </label>
-          <div className="flex justify-end gap-3 border-t border-border pt-4">
-            <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={busy}>
-              {busy ? "Saving…" : "Save category"}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }

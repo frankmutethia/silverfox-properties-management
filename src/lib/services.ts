@@ -19,13 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { api, getAllPages, type Query } from "./api";
-import type {
-  ApiService,
-  ApiServiceCategory,
-  ServiceCategoryNumber,
-  ServiceGroup,
-  ServiceInput,
-} from "./types";
+import type { ApiService, ServiceGroup, ServiceInput } from "./types";
 
 // Icons staff can choose for a service. The API stores the lucide-react name; only these
 // are bundled, so unknown names fall back to a neutral icon.
@@ -55,22 +49,17 @@ export function serviceIcon(name: string | null): LucideIcon {
 // ---------- Public ----------
 
 export const getPublishedServices = (signal?: AbortSignal) =>
-  api.get<{ categories: ServiceGroup[] }>("/services", {}, signal).then((data) => data.categories);
-
-export const getServiceCategories = (signal?: AbortSignal) =>
   api
-    .get<{ categories: ApiServiceCategory[] }>("/services/categories", {}, signal)
-    .then((data) => data.categories);
+    .get<{ categories?: ServiceGroup[]; services: ApiService[] }>("/services", {}, signal)
+    .then(
+      (data) =>
+        data.services ??
+        (data.categories ?? []).flatMap((group) =>
+          group.services.map((service) => ({ ...service, category: group.title })),
+        ),
+    );
 
 // ---------- Staff ----------
-
-export const updateServiceCategory = (
-  number: ServiceCategoryNumber,
-  input: { title?: string; description?: string },
-) =>
-  api
-    .patch<{ category: ApiServiceCategory }>(`/services/categories/${number}`, input)
-    .then((data) => data.category);
 
 /** Every service, drafts included, in display order. */
 export const listAllAdminServices = (query: Query = {}, signal?: AbortSignal) =>
