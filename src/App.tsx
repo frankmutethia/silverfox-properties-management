@@ -125,7 +125,7 @@ export default function App() {
   else
     page = (
       <>
-        <SiteHeader />
+        <SiteHeader overlay={pathname === "/"} />
         <PublicPage pathname={pathname} />
         <SiteFooter />
       </>

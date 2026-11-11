@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { getEnquiries, retryEnquiryEmail } from "@/lib/enquiries";
 import type { ApiEnquiry, EnquiryEmailStatus } from "@/lib/types";
 import { reportError, useQuery } from "@/lib/use-query";
@@ -31,6 +32,14 @@ export default function AdminEnquiries() {
     setBusy(enquiry._id);
     try {
       const saved = await retryEnquiryEmail(enquiry._id);
+      if (saved.emailStatus === "sent")
+        toast.success("Email sent", {
+          description: `Notification for ${saved.name}'s enquiry was delivered to the inbox.`,
+        });
+      else
+        toast.error("Email still not sent", {
+          description: saved.emailError ?? "The email couldn't be sent.",
+        });
       result.setData(
         (current) =>
           current && {
@@ -76,6 +85,13 @@ export default function AdminEnquiries() {
                 <EmailStatus status={enquiry.emailStatus} />
               </div>
               <p className="mt-4 whitespace-pre-wrap break-words leading-7">{enquiry.message}</p>
+              {enquiry.emailStatus === "failed" && (
+                <p className="mt-4 rounded-lg bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                  <strong className="font-semibold">Email not sent:</strong>{" "}
+                  {enquiry.emailError ?? "The reason wasn't recorded. Retry to see why."} The
+                  enquiry is saved here either way.
+                </p>
+              )}
               {enquiry.emailStatus !== "sent" && (
                 <Button
                   className="mt-4"

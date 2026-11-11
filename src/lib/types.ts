@@ -142,6 +142,8 @@ export interface ApiEnquiry {
   name: string;
   message: string;
   emailStatus: EnquiryEmailStatus;
+  /** Why the notification email failed, when it did. */
+  emailError?: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -36,12 +36,6 @@ export default function SiteFooter() {
           <a href="/#testimonials" className="hover:text-primary">
             Testimonials
           </a>
-          <a href="/#owners" className="hover:text-primary">
-            For property owners
-          </a>
-          <a href="/#residents" className="hover:text-primary">
-            For residents
-          </a>
           <a href="/staff/login" className="hover:text-primary">
             Staff Login
           </a>

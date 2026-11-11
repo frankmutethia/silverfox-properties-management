@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpRight, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  Eye,
+  EyeOff,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { notifyDeleted, notifyStatusChanged } from "@/lib/notify";
 import {
   deleteService,
@@ -12,52 +21,39 @@ import { richTextClass } from "@/lib/rich-text";
 import type { ApiService, PublicationStatus } from "@/lib/types";
 import { reportError, useQuery } from "@/lib/use-query";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import ServiceForm from "@/components/ServiceForm";
 import RichText from "@/components/RichText";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import StatusBadge, { StatusFilter } from "@/components/admin/StatusBadge";
-import { LineSkeletons, LoadError } from "@/components/QueryState";
+import { LoadError } from "@/components/QueryState";
 
 type StatusOption = "all" | PublicationStatus;
 
-async function loadServices(signal: AbortSignal) {
-  return listAllAdminServices({}, signal);
-}
-
+/** Every service, drafts included, each managed as its own card. */
 export default function AdminServices() {
-  const result = useQuery((signal) => loadServices(signal), []);
+  const result = useQuery((signal) => listAllAdminServices({}, signal), []);
   const [status, setStatus] = useState<StatusOption>("all");
   const [editing, setEditing] = useState<ApiService | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleting, setDeleting] = useState<ApiService | null>(null);
   const [working, setWorking] = useState<string | null>(null);
-  const categories = [
-    { number: "", title: "All services", description: "Create and manage individual services." },
-  ];
-  const services = result.data ?? [];
-  const inCategory = (number: string) =>
-    services
-      .filter((service) => number === "" || service.category === number)
-      .sort((a, b) => a.sortOrder - b.sortOrder);
+  const services = [...(result.data ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
+  const visible = services.filter((item) => status === "all" || item.status === status);
+  const published = services.filter((item) => item.status === "published").length;
 
   async function move(service: ApiService, step: number) {
-    const group = inCategory("");
-    const index = group.findIndex((item) => item._id === service._id);
+    const index = services.findIndex((item) => item._id === service._id);
     const target = index + step;
-    if (index < 0 || target < 0 || target >= group.length) return;
-    const reordered = [...group];
-    reordered.splice(index, 1);
-    reordered.splice(target, 0, service);
-    // sortOrder is global, so send every service in category order.
-    const ordered = reordered;
+    if (index < 0 || target < 0 || target >= services.length) return;
+    const ordered = [...services];
+    ordered.splice(index, 1);
+    ordered.splice(target, 0, service);
     const sortOrders = new Map(ordered.map((item, position) => [item._id, position]));
     result.setData(
       (current) =>
         current &&
-        current.map((item) => ({
-          ...item,
-          sortOrder: sortOrders.get(item._id) ?? item.sortOrder,
-        })),
+        current.map((item) => ({ ...item, sortOrder: sortOrders.get(item._id) ?? item.sortOrder })),
     );
     setWorking(service._id);
     try {
@@ -113,142 +109,79 @@ export default function AdminServices() {
         </div>
       </div>
       <p className="mb-6 mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-        Create individual services with an optional category. Only published services are shown
-        publicly.
+        Each card is one service. Published services appear on the website in the order shown here.
       </p>
-      <StatusFilter
-        label="Filter by status"
-        value={status}
-        onChange={setStatus}
-        options={[
-          { value: "all", label: "All" },
-          { value: "published", label: "Published" },
-          { value: "draft", label: "Drafts" },
-        ]}
-      />
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <StatusFilter
+          label="Filter by status"
+          value={status}
+          onChange={setStatus}
+          options={[
+            { value: "all", label: "All" },
+            { value: "published", label: "Published" },
+            { value: "draft", label: "Drafts" },
+          ]}
+        />
+        {result.data && (
+          <p className="text-xs font-semibold uppercase tracking-wider text-accent" role="status">
+            {published} published · {services.length - published}{" "}
+            {services.length - published === 1 ? "draft" : "drafts"}
+          </p>
+        )}
+      </div>
       {status !== "all" && (
         <p className="mt-3 text-xs text-muted-foreground">
           Show all services to change their order.
         </p>
       )}
+
       {!result.data && result.loading ? (
-        <div className="mt-6 grid gap-6 xl:grid-cols-2">
-          <LineSkeletons lines={10} className="admin-panel p-6" />
-          <LineSkeletons lines={10} className="admin-panel p-6" />
+        <div className="mt-6 grid gap-6 md:grid-cols-2 2xl:grid-cols-3" aria-busy="true">
+          {[0, 1, 2].map((index) => (
+            <Skeleton key={index} className="h-[380px] rounded-2xl" />
+          ))}
         </div>
       ) : !result.data && result.error ? (
         <LoadError error={result.error} onRetry={result.reload} className="admin-panel mt-6" />
       ) : (
-        <div className="mt-6 grid items-start gap-6">
-          {categories.map((category) => {
-            const group = inCategory(category.number);
-            const visible = group.filter((item) => status === "all" || item.status === status);
-            const published = group.filter((item) => item.status === "published").length;
+        <ol className="mt-6 grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
+          {visible.map((service) => {
+            const index = services.indexOf(service);
             return (
-              <section key={category.number} className="admin-panel overflow-hidden">
-                <div className="border-b border-border bg-secondary/50 p-6">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-accent">
-                      {published} published · {group.length - published} drafts
-                    </p>
-                  </div>
-                  <h2 className="text-xl font-semibold">{category.title}</h2>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                    {category.description}
-                  </p>
-                </div>
-                <ol className="divide-y divide-border px-6">
-                  {visible.map((service) => {
-                    const Icon = serviceIcon(service.icon);
-                    const index = group.indexOf(service);
-                    return (
-                      <li key={service._id} className="py-6">
-                        <div className="flex gap-4">
-                          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
-                            <Icon className="size-5" aria-hidden="true" />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="break-words text-sm font-semibold">{service.title}</h3>
-                              <StatusBadge status={service.status} />
-                            </div>
-                            {service.image && (
-                              <img
-                                src={service.image.url}
-                                alt={service.image.alt}
-                                className="mt-3 aspect-[16/9] w-full max-w-sm rounded-lg object-cover"
-                              />
-                            )}
-                            <RichText
-                              images
-                              html={service.description}
-                              className={`${richTextClass} mt-2 text-muted-foreground`}
-                            />
-                          </div>
-                        </div>
-                        <div className="mt-4 flex flex-wrap gap-2 pl-14">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            aria-label={`Move ${service.title} up`}
-                            disabled={status !== "all" || index === 0 || working !== null}
-                            onClick={() => void move(service, -1)}
-                          >
-                            <ArrowUp />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            aria-label={`Move ${service.title} down`}
-                            disabled={
-                              status !== "all" || index === group.length - 1 || working !== null
-                            }
-                            onClick={() => void move(service, 1)}
-                          >
-                            <ArrowDown />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={working === service._id}
-                            onClick={() => void toggle(service)}
-                          >
-                            {service.status === "published" ? "Unpublish" : "Publish"}
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => openForm(service)}>
-                            <Pencil />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-destructive"
-                            onClick={() => setDeleting(service)}
-                          >
-                            <Trash2 />
-                            Delete
-                          </Button>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ol>
-                {!visible.length && (
-                  <p className="p-6 text-sm text-muted-foreground">
-                    No {status === "all" ? "" : `${status} `}services to show.
-                  </p>
-                )}
-                <div className="border-t border-border p-4">
-                  <Button variant="ghost" size="sm" onClick={() => openForm(null)}>
-                    <Plus />
-                    Create service
-                  </Button>
-                </div>
-              </section>
+              <li key={service._id} className="flex">
+                <ServiceCard
+                  service={service}
+                  position={index + 1}
+                  busy={working === service._id}
+                  canMove={status === "all" && working === null}
+                  first={index === 0}
+                  last={index === services.length - 1}
+                  onMove={(step) => void move(service, step)}
+                  onToggle={() => void toggle(service)}
+                  onEdit={() => openForm(service)}
+                  onDelete={() => setDeleting(service)}
+                />
+              </li>
             );
           })}
-        </div>
+          <li className="flex">
+            <button
+              type="button"
+              onClick={() => openForm(null)}
+              className="flex min-h-[220px] w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border p-6 text-sm font-semibold text-muted-foreground transition-colors hover:border-accent hover:bg-accent/5 hover:text-accent"
+            >
+              <span className="flex size-12 items-center justify-center rounded-full bg-secondary">
+                <Plus className="size-5" aria-hidden="true" />
+              </span>
+              {services.length ? "Create another service" : "Create your first service"}
+            </button>
+          </li>
+        </ol>
       )}
+      {result.data && !visible.length && status !== "all" && (
+        <p className="mt-4 text-sm text-muted-foreground">No {status} services to show.</p>
+      )}
+
       <ServiceForm
         service={editing}
         open={formOpen}
@@ -268,5 +201,119 @@ export default function AdminServices() {
         }}
       />
     </>
+  );
+}
+
+function ServiceCard({
+  service,
+  position,
+  busy,
+  canMove,
+  first,
+  last,
+  onMove,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  service: ApiService;
+  position: number;
+  busy: boolean;
+  canMove: boolean;
+  first: boolean;
+  last: boolean;
+  onMove: (step: number) => void;
+  onToggle: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const Icon = serviceIcon(service.icon);
+  const category = String(service.category || "").trim();
+  const isPublished = service.status === "published";
+  return (
+    <article
+      className={`admin-panel flex w-full flex-col overflow-hidden ${isPublished ? "" : "border-dashed"}`}
+    >
+      <div className="relative aspect-[16/9] shrink-0 overflow-hidden bg-gradient-to-br from-accent/15 via-secondary to-secondary">
+        {service.image ? (
+          <img
+            src={service.image.url}
+            alt={service.image.alt}
+            loading="lazy"
+            className={`absolute inset-0 size-full object-cover ${isPublished ? "" : "opacity-70 grayscale"}`}
+          />
+        ) : (
+          <span className="absolute inset-0 flex items-center justify-center">
+            <Icon className="size-14 text-accent/40" aria-hidden="true" />
+          </span>
+        )}
+        <span className="absolute left-3 top-3 flex size-10 items-center justify-center rounded-xl bg-card/95 text-accent shadow-sm">
+          <Icon className="size-5" aria-hidden="true" />
+        </span>
+        <span className="absolute right-3 top-3 rounded-full bg-card shadow-sm">
+          <StatusBadge status={service.status} />
+        </span>
+        <span className="absolute bottom-3 left-3 rounded-full bg-card/95 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground shadow-sm">
+          #{position}
+        </span>
+      </div>
+      <div className="flex flex-1 flex-col p-5">
+        {category && (
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent">
+            {category}
+          </p>
+        )}
+        <h2 className="mt-1 break-words text-lg font-semibold leading-snug">{service.title}</h2>
+        <RichText
+          images={false}
+          html={service.description}
+          className={`${richTextClass} mt-2 line-clamp-4 text-sm text-muted-foreground [&_p]:my-0`}
+        />
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-secondary/40 px-4 py-3">
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={`Move ${service.title} earlier`}
+            title="Move earlier"
+            disabled={!canMove || first}
+            onClick={() => onMove(-1)}
+          >
+            <ArrowLeft />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={`Move ${service.title} later`}
+            title="Move later"
+            disabled={!canMove || last}
+            onClick={() => onMove(1)}
+          >
+            <ArrowRight />
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <Button variant="outline" size="sm" disabled={busy} onClick={onToggle}>
+            {isPublished ? <EyeOff /> : <Eye />}
+            {isPublished ? "Unpublish" : "Publish"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={onEdit}>
+            <Pencil />
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="text-destructive"
+            aria-label={`Delete ${service.title}`}
+            title="Delete"
+            onClick={onDelete}
+          >
+            <Trash2 />
+          </Button>
+        </div>
+      </div>
+    </article>
   );
 }
